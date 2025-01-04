@@ -107,7 +107,8 @@ class SendToEagleWithMetadata(BaseNode):
             elif len(images) >= 2:
                 base_filename += f"({index})"
 
-            file_name = base_filename + "." + file_format
+            # jpegの場合は拡張子をjpgに変更（jpegのままだとEagleに送信した場合に .jpeg.jpg となるため）
+            file_name = base_filename + "." + ("jpg" if file_format == "jpeg" else file_format)
             file_path = os.path.join(full_output_folder, file_name)
 
             if file_format == "png":
