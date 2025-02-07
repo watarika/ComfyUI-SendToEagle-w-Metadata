@@ -157,6 +157,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/02/07 Support for comfyui-prompt-control
 - 2025/01/04 First release
 
 ## Acknowledgements

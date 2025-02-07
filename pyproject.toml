@@ -1,7 +1,7 @@
 [project]
 name = "sendtoeagle-w-metadata"
 description = "Sends images with metadata (PNGInfo) obtained from the input values of each node to Eagle. You can customize the tags to be registered in Eagle."
-version = "1.0.0"
+version = "1.0.1"
 license = {file = "LICENSE"}
 
 [project.urls]

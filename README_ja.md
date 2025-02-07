@@ -153,6 +153,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 変更履歴
+- 2025/02/07 comfyui-prompt-controlに対応
 - 2025/01/04 初版
 
 ## 謝辞

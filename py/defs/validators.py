@@ -1,6 +1,7 @@
 from collections import deque
 
 from .samplers import SAMPLERS
+from .textencodes import TEXT_ENCODE_CLASSES
 
 
 def is_positive_prompt(node_id, obj, prompt, extra_data, outputs, input_data_all):
@@ -23,7 +24,7 @@ def _get_node_id_list(prompt, field_name):
                 while len(d) > 0:
                     nid2 = d.popleft()
                     class_type = prompt[nid2]["class_type"]
-                    if class_type == "CLIPTextEncode":
+                    if class_type in TEXT_ENCODE_CLASSES:
                         node_id_list[nid] = nid2
                         break
                     inputs = prompt[nid2]["inputs"]
