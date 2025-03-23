@@ -157,8 +157,9 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
-- 2025/02/07 Support for comfyui-prompt-control
-- 2025/01/04 First release
+- 2025/03/23 1.0.2 Fixed an error when using embeddings
+- 2025/02/07 1.0.1 Support for comfyui-prompt-control
+- 2025/01/04 1.0.0 First release
 
 ## Acknowledgements
   - The implementation for metadata acquisition is based on [ComfyUI-SaveImageWithMetaData](https://github.com/nkchocoai/ComfyUI-SaveImageWithMetaData)

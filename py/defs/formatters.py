@@ -60,7 +60,10 @@ def extract_embedding_hashes(text, input_data):
     embedding_hashes = []
     for embedding_name in embedding_names:
         embedding_file_path = get_embedding_file_path(embedding_name, clip)
-        embedding_hashes.append(calc_hash(embedding_file_path))
+        if embedding_file_path is not None:
+            embedding_hashes.append(calc_hash(embedding_file_path))
+        else:
+            print(f"Warning: Embedding file not found for '{embedding_name}'")
 
     return embedding_hashes
 
@@ -99,7 +102,7 @@ def _extract_embedding_names(text, input_data):
                 word.startswith(embedding_identifier)
                 and clip.embedding_directory is not None
             ):
-                embedding_name = word[len(embedding_identifier) :].strip("\n")
+                embedding_name = word[len(embedding_identifier) :].strip("\n").strip(",")
                 embedding_names.append(embedding_name)
 
     return embedding_names, clip

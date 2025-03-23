@@ -153,8 +153,9 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 変更履歴
-- 2025/02/07 comfyui-prompt-controlに対応
-- 2025/01/04 初版
+- 2025/03/23 1.0.2 embeddingsを使うとエラーになっていた問題を修正
+- 2025/02/07 1.0.1 comfyui-prompt-controlに対応
+- 2025/01/04 1.0.0 初版
 
 ## 謝辞
   - メタデータ取得の実装は [ComfyUI-SaveImageWithMetaData](https://github.com/nkchocoai/ComfyUI-SaveImageWithMetaData) を流用しています
