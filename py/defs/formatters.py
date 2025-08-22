@@ -75,9 +75,9 @@ def _extract_embedding_names(text, input_data):
     if clip_ is not None:
         tokenizer = clip_.tokenizer
         if isinstance(tokenizer, SD1Tokenizer):
-            clip = tokenizer.clip_l
+            clip = tokenizer.clip
         elif isinstance(tokenizer, SD2Tokenizer):
-            clip = tokenizer.clip_h
+            clip = tokenizer.clip
         elif isinstance(tokenizer, SDXLTokenizer):
             clip = tokenizer.clip_l
         elif isinstance(tokenizer, SD3Tokenizer):

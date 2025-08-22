@@ -157,6 +157,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/08/22 1.0.3 Fixed an issue where using Qwen-Image caused an error
 - 2025/03/23 1.0.2 Fixed an error when using embeddings
 - 2025/02/07 1.0.1 Support for comfyui-prompt-control
 - 2025/01/04 1.0.0 First release
