@@ -12,6 +12,16 @@ from execution import get_input_data
 from comfy_execution.graph import DynamicPrompt
 
 
+class _ExecutionListProxy:
+    """Minimal wrapper exposing get_output_cache for metadata capture."""
+
+    def __init__(self, outputs_cache):
+        self._outputs_cache = outputs_cache
+
+    def get_output_cache(self, from_node_id, _to_node_id):
+        return self._outputs_cache.get(from_node_id)
+
+
 class Capture:
     @classmethod
     def get_inputs(cls, calc_model_hash):
@@ -19,6 +29,8 @@ class Capture:
         prompt = hook.current_prompt
         extra_data = hook.current_extra_data
         outputs = hook.prompt_executer.caches.outputs
+        execution_list = _ExecutionListProxy(outputs)
+        dynprompt = DynamicPrompt(prompt)
 
         for node_id, obj in prompt.items():
             class_type = obj["class_type"]
@@ -27,7 +39,7 @@ class Capture:
             obj_class = NODE_CLASS_MAPPINGS[class_type]
             node_inputs = prompt[node_id]["inputs"]
             input_data = get_input_data(
-                node_inputs, obj_class, node_id, outputs, DynamicPrompt(prompt), extra_data
+                node_inputs, obj_class, node_id, execution_list, dynprompt, extra_data
             )
             
             metas = CAPTURE_FIELD_LIST[class_type]
