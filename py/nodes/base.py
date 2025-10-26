@@ -37,7 +37,8 @@ class SendToEagleWithMetadata(BaseNode):
         self.eagle_server_url = os.environ.get("EAGLE_SERVER_URL", "http://localhost:41595") # No need to set for local machine
         self.comfyui_url = os.environ.get("EAGLE_COMFYUI_URL", "http://localhost:8188") # No need to set for local machine
         self.timezone = os.environ.get("EAGLE_TIMEZONE", None) # ex. "Asia/Tokyo",  No need to set for local machine
-        self.eagle_api = EagleAPI(self.eagle_server_url)
+        self.api_token = os.environ.get("EAGLE_API_TOKEN", None) # Go to Preferences > Developer Settings to generate and configure your API token.
+        self.eagle_api = EagleAPI(self.eagle_server_url, self.api_token)
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("filepath",)

@@ -9,13 +9,14 @@ class FolderInfo(TypedDict):
 
 
 class EagleAPI:
-    def __init__(self, base_url="http://localhost:41595"):
+    def __init__(self, base_url="http://localhost:41595", api_token=None):
         # Basic認証のIDとパスワード付きURLの場合、IDとパスワードをURLから分離する
         parsed_url = urlparse(base_url)
         self.basic_auth_id = parsed_url.username if parsed_url.username else None
         self.basic_auth_password = parsed_url.password if parsed_url.password else None
         self.base_url = base_url.replace(f"{self.basic_auth_id}:{self.basic_auth_password}@", "", 1)
         self.folder_list: Optional[List[FolderInfo]] = None
+        self.api_token = api_token
         print(f"EagleAPI Server:", self.base_url)
 
     # #########################################
@@ -96,11 +97,17 @@ class EagleAPI:
 
         try:
             if method == "GET":
+                if self.api_token:
+                    url +=  f"?token={self.api_token}"
+
                 if self.basic_auth_id and self.basic_auth_password:
                     response = requests.get(url, headers=headers, auth=(self.basic_auth_id, self.basic_auth_password))
                 else:
                     response = requests.get(url, headers=headers)
             elif method == "POST":
+                if self.api_token:
+                    data["token"] = self.api_token
+
                 if self.basic_auth_id and self.basic_auth_password:
                     response = requests.post(url, headers=headers, json=data, auth=(self.basic_auth_id, self.basic_auth_password))
                 else:
