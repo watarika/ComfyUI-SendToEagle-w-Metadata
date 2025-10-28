@@ -153,6 +153,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 変更履歴
+- 2025/10/28 1.0.6 パフォーマンス向上のためプレビューなしに変更
 - 2025/10/27 1.0.5 EagleのAPI Tokenに対応(環境変数で指定)
 - 2025/10/26 1.0.4 DynamicPrompt関係でエラーになるケースを修正
 - 2025/08/22 1.0.3 Qwen-Imageでエラーになっていた問題を修正

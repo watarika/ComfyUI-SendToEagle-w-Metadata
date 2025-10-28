@@ -169,10 +169,7 @@ class SendToEagleWithMetadata(BaseNode):
             file_path_list.append(file_path)
             counter += 1
 
-        return {
-            "ui": {"images": results},
-            "result": (file_path_list,)
-        }
+        return (file_path_list,)
 
     @classmethod
     def gen_pnginfo(
