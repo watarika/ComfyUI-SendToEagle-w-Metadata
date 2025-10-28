@@ -157,6 +157,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/10/28 1.0.6 Changed to no preview for improved performance
 - 2025/10/27 1.0.5 Supports Eagle API Token (specified via environment variable)
 - 2025/10/26 1.0.4 Fixed cases where errors occur related to DynamicPrompt
 - 2025/08/22 1.0.3 Fixed an issue where using Qwen-Image caused an error
