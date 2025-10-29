@@ -36,8 +36,8 @@ class Capture:
         return value
 
     @staticmethod
-    def _latest_value_from_entries(entries):
-        for entry in reversed(entries):
+    def _closest_value_from_entries(entries):
+        for entry in entries:
             if entry is None:
                 continue
             if isinstance(entry, (list, tuple)) and len(entry) >= 2:
@@ -132,9 +132,9 @@ class Capture:
 
         def update_pnginfo_dict(inputs, metafield, key):
             entries = inputs.get(metafield, [])
-            latest_value = cls._latest_value_from_entries(entries)
-            if latest_value is not None:
-                pnginfo_dict[key] = latest_value
+            closest_value = cls._closest_value_from_entries(entries)
+            if closest_value is not None:
+                pnginfo_dict[key] = closest_value
 
         update_pnginfo_dict(
             inputs_before_sampler_node, MetaField.POSITIVE_PROMPT, "Positive prompt"
@@ -151,8 +151,8 @@ class Capture:
         if (save_civitai_sampler):
             pnginfo_dict["Sampler"] = cls.get_sampler_for_civitai(sampler_names, schedulers)
         else:
-            sampler_name_value = cls._latest_value_from_entries(sampler_names)
-            scheduler_value = cls._latest_value_from_entries(schedulers)
+            sampler_name_value = cls._closest_value_from_entries(sampler_names)
+            scheduler_value = cls._closest_value_from_entries(schedulers)
             if sampler_name_value is not None:
                 pnginfo_dict["Sampler"] = sampler_name_value
 
@@ -168,8 +168,8 @@ class Capture:
 
         image_widths = inputs_before_sampler_node.get(MetaField.IMAGE_WIDTH, [])
         image_heights = inputs_before_sampler_node.get(MetaField.IMAGE_HEIGHT, [])
-        width_value = cls._latest_value_from_entries(image_widths)
-        height_value = cls._latest_value_from_entries(image_heights)
+        width_value = cls._closest_value_from_entries(image_widths)
+        height_value = cls._closest_value_from_entries(image_heights)
         if width_value is not None and height_value is not None:
             pnginfo_dict["Size"] = f"{width_value}x{height_value}"
 
@@ -218,12 +218,12 @@ class Capture:
     ):
         resource_hashes = {}
         model_hashes = inputs_before_sampler_node.get(MetaField.MODEL_HASH, [])
-        model_hash_value = cls._latest_value_from_entries(model_hashes)
+        model_hash_value = cls._closest_value_from_entries(model_hashes)
         if model_hash_value is not None:
             resource_hashes["model"] = model_hash_value
 
         vae_hashes = inputs_before_this_node.get(MetaField.VAE_HASH, [])
-        vae_hash_value = cls._latest_value_from_entries(vae_hashes)
+        vae_hash_value = cls._closest_value_from_entries(vae_hashes)
         if vae_hash_value is not None:
             resource_hashes["vae"] = vae_hash_value
 
@@ -316,8 +316,8 @@ class Capture:
                 return sampler + " Karras"
             return sampler
 
-        sampler = cls._latest_value_from_entries(sampler_names)
-        scheduler = cls._latest_value_from_entries(schedulers) or "normal"
+        sampler = cls._closest_value_from_entries(sampler_names)
+        scheduler = cls._closest_value_from_entries(schedulers) or "normal"
         if sampler is None:
             return ""
 
