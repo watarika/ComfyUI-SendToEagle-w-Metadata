@@ -30,9 +30,12 @@ def pre_get_input_data(inputs, class_def, unique_id, *args):
         current_simple_node_id = unique_id
 
 
-def post_get_input_data(inputs, class_def, unique_id, result, execution_list=None, dynprompt=None, extra_data=None):
+def post_get_input_data(inputs, class_def, unique_id, result, *args, **kwargs):
     global runtime_input_cache
 
+    # Extract known parameters from kwargs, with defaults
+    dynprompt = kwargs.get('dynprompt', None)
+    
     if dynprompt is None or result is None:
         return
 

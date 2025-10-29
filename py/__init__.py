@@ -22,25 +22,17 @@ execution.PromptExecutor.execute = prefix_function(
 _original_get_input_data = execution.get_input_data
 
 
-def wrapped_get_input_data(inputs, class_def, unique_id, execution_list=None, dynprompt=None, extra_data=None):
-    pre_get_input_data(inputs, class_def, unique_id, execution_list, dynprompt, extra_data)
-    result = _original_get_input_data(
-        inputs,
-        class_def,
-        unique_id,
-        execution_list,
-        dynprompt,
-        extra_data if extra_data is not None else {},
-    )
+def wrapped_get_input_data(inputs, class_def, unique_id, *args, **kwargs):
+    pre_get_input_data(inputs, class_def, unique_id, *args, **kwargs)
+    result = _original_get_input_data(inputs, class_def, unique_id, *args, **kwargs)
     try:
         post_get_input_data(
             inputs,
             class_def,
             unique_id,
             result,
-            execution_list,
-            dynprompt,
-            extra_data if extra_data is not None else {},
+            *args,
+            **kwargs
         )
     except Exception:
         # Silently ignore errors in post_get_input_data to avoid breaking the main execution.
