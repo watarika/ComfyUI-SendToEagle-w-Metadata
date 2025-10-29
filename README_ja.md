@@ -54,6 +54,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
 | custom_tag_pattern | `tag_pattern` が `Custom` の場合に使用するタグのパターンをカンマ区切りで指定します。<br>使用可能な設定は以下の通りです。<ul><li>画像メタデータ : `Positive prompt`, `Negative prompt`, `Steps`, `Sampler`, `CFG scale`, `Seed`, `Clip skip`, `Size`, `Model`, `Model hash`, `VAE`, `VAE hash`, `Batch index`, `Batch size`</li><li>メモの内容：`Memo`</li><li>追加メタデータ : `extra_metadata` で定義した `Key`</li></ul>※上記に当てはまらない項目はそのままタグとして付与されます<br>※値が取得できないメタデータは値に `-` を付与します（例 : `"Model hash: -"`） ||
 | memo | Eagle のメモ欄に保存するテキストを指定します。指定したテキストはメモ欄の最後尾に `"Memo:"` を付与して保存します |
 | extra_metadata | 保存する画像に独自のメタデータを追加できます。不要な場合は省略できます。<br>`Create Extra MetaData` ノードで追加するメタデータを指定します。 |
+| positive / negative | ワークフローから取得したプロンプトを上書きするオプション入力です。<br>単一の文字列または文字列のリストを受け付けます。リストを渡した場合はバッチのインデックスに応じた要素を適用し、リストがバッチ数より短い分は空文字になります。単一の文字列を渡した場合は全画像に同じプロンプトが適用されます。 |
 
 ### ノードの出力
 - 保存した画像のファイルパスをフルパスで出力します（リスト形式）
@@ -153,6 +154,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 変更履歴
+- 2025/10/29 1.1.0 positive/negative のリスト入力でバッチごとにプロンプトを設定できるよう対応
 - 2025/10/28 1.0.6 パフォーマンス向上のためプレビューなしに変更
 - 2025/10/27 1.0.5 EagleのAPI Tokenに対応(環境変数で指定)
 - 2025/10/26 1.0.4 DynamicPrompt関係でエラーになるケースを修正

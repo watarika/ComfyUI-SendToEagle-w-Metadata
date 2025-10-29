@@ -29,6 +29,8 @@ class SendToEagleWithMetadataFull(SendToEagleWithMetadata):
             "optional": {
                 "memo": ("STRING", {"multiline": True},),
                 "extra_metadata": ("EXTRA_METADATA", {}),
+                "positive": ("STRING", {"default": "", "forceInput": True}),
+                "negative": ("STRING", {"default": "", "forceInput": True}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -52,6 +54,8 @@ class SendToEagleWithMetadataSimple(SendToEagleWithMetadata):
             "optional": {
                 "memo": ("STRING", {"multiline": True},),
                 "extra_metadata": ("EXTRA_METADATA", {}),
+                "positive": ("STRING", {"default": "", "forceInput": True}),
+                "negative": ("STRING", {"default": "", "forceInput": True}),
             },
             "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
@@ -69,6 +73,8 @@ class SendToEagleWithMetadataSimple(SendToEagleWithMetadata):
         custom_tag_pattern,
         memo="",
         extra_metadata={},
+        positive="",
+        negative="",
         prompt=None,
         extra_pnginfo=None,
     ):
@@ -90,6 +96,8 @@ class SendToEagleWithMetadataSimple(SendToEagleWithMetadata):
             eagle_folder="",
             memo=memo,
             extra_metadata=extra_metadata,
+            positive=positive,
+            negative=negative,
             prompt=prompt,
             extra_pnginfo=extra_pnginfo,
         )

@@ -56,6 +56,7 @@ If you want to change these behaviors, use the `Send to Eagle With Metadata (Ext
 | custom_tag_pattern  | Specifies the tag pattern to be used when `tag_pattern` is `Custom`, separated by commas.<br>The following settings are available:<ul><li>Image metadata: `Positive prompt`, `Negative prompt`, `Steps`, `Sampler`, `CFG scale`, `Seed`, `Clip skip`, `Size`, `Model`, `Model hash`, `VAE`, `VAE hash`, `Batch index`, `Batch size`</li><li>Memo content: `Memo`</li><li>Additional metadata: The `Key` defined in `extra_metadata`</li></ul>Note: Items that do not match the above are added as tags as they are<br>Note: Metadata for which a value cannot be obtained is added with a value of `-` (e.g., `"Model hash: -"`)||
 | memo                | Specifies the text to be saved in the Eagle notes field. The specified text is appended with `"Memo:"` and saved at the end of the notes field                                                                                                                                                                    |
 | extra_metadata      | Allows you to add your own metadata to the saved image. Can be omitted if not needed.<br>Specifies the metadata to be added using the `Create Extra MetaData` node.                                                                                                                                                               |
+| positive / negative | Optional prompts to override the workflow prompts.<br>Accepts either a single string or a list of strings. When a list is supplied, each batch image receives the prompt at the same index; if the list is shorter than the batch, the remaining images use a blank prompt. When a single string is supplied, the same prompt applies to every image. |
 
 ### Node Output
 
@@ -157,6 +158,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/10/29 1.1.0 Added support for supplying per-image positive/negative prompts via list inputs
 - 2025/10/28 1.0.6 Changed to no preview for improved performance
 - 2025/10/27 1.0.5 Supports Eagle API Token (specified via environment variable)
 - 2025/10/26 1.0.4 Fixed cases where errors occur related to DynamicPrompt

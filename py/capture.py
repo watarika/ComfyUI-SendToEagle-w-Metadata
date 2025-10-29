@@ -6,6 +6,7 @@ from collections import defaultdict
 from . import hook
 from .defs.captures import CAPTURE_FIELD_LIST
 from .defs.meta import MetaField
+from .defs.textencodes import TEXT_ENCODE_CLASSES
 
 from nodes import NODE_CLASS_MAPPINGS
 from execution import get_input_data
@@ -24,7 +25,7 @@ class _ExecutionListProxy:
 
 class Capture:
     @classmethod
-    def get_inputs(cls, calc_model_hash):
+    def get_inputs(cls, calc_model_hash, include_prompts=True):
         inputs = defaultdict(list)
         prompt = hook.current_prompt
         extra_data = hook.current_extra_data
@@ -34,6 +35,8 @@ class Capture:
 
         for node_id, obj in prompt.items():
             class_type = obj["class_type"]
+            if not include_prompts and class_type in TEXT_ENCODE_CLASSES:
+                continue
             if class_type not in CAPTURE_FIELD_LIST:
                 continue
             obj_class = NODE_CLASS_MAPPINGS[class_type]
