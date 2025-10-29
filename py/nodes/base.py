@@ -42,6 +42,7 @@ class SendToEagleWithMetadata(BaseNode):
 
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("filepath",)
+    INPUT_IS_LIST = True
     OUTPUT_IS_LIST = (True,)
     OUTPUT_NODE = True
 
@@ -72,11 +73,41 @@ class SendToEagleWithMetadata(BaseNode):
         prompt=None,
         extra_pnginfo=None,
     ):
-        manual_positive_value = positive.strip() if isinstance(positive, str) else ""
-        manual_negative_value = negative.strip() if isinstance(negative, str) else ""
-        manual_positive = manual_positive_value != ""
-        manual_negative = manual_negative_value != ""
-        use_workflow_prompts = not (manual_positive and manual_negative)
+        images = self._unwrap_to_value(images)
+        filename_prefix = self._unwrap_scalar(filename_prefix) or "ComfyUI"
+        sampler_selection_method = self._unwrap_scalar(sampler_selection_method)
+        sampler_selection_node_id = self._unwrap_scalar(sampler_selection_node_id)
+        file_format = self._unwrap_scalar(file_format)
+        lossless_webp = self._unwrap_scalar(lossless_webp)
+        quality = self._unwrap_scalar(quality)
+        save_workflow_json = self._unwrap_scalar(save_workflow_json)
+        add_counter_to_filename = self._unwrap_scalar(add_counter_to_filename)
+        civitai_sampler = self._unwrap_scalar(civitai_sampler)
+        calc_model_hash = self._unwrap_scalar(calc_model_hash)
+        save_only_no_send = self._unwrap_scalar(save_only_no_send)
+        send_metadata_as_memo = self._unwrap_scalar(send_metadata_as_memo)
+        tag_pattern = self._unwrap_scalar(tag_pattern)
+        custom_tag_pattern = self._unwrap_scalar(custom_tag_pattern)
+        eagle_folder = self._unwrap_scalar(eagle_folder)
+        memo_value = self._unwrap_scalar(memo)
+        memo = memo_value if isinstance(memo_value, str) else ""
+        extra_metadata = self._unwrap_scalar(extra_metadata) or {}
+        positive = self._unwrap_to_value(positive)
+        negative = self._unwrap_to_value(negative)
+        prompt = self._unwrap_to_value(prompt)
+        extra_pnginfo = self._unwrap_to_value(extra_pnginfo)
+
+        image_tensors = self._flatten_image_batch(images)
+        if not image_tensors:
+            return ([],)
+
+        positive_prompts = self._normalize_prompt_input(positive)
+        negative_prompts = self._normalize_prompt_input(negative)
+
+        has_manual_positive = self._prompt_has_manual(positive_prompts)
+        has_manual_negative = self._prompt_has_manual(negative_prompts)
+        use_workflow_prompts = not (has_manual_positive and has_manual_negative)
+
         pnginfo_dict_src = self.gen_pnginfo(
             sampler_selection_method,
             sampler_selection_node_id,
@@ -84,24 +115,36 @@ class SendToEagleWithMetadata(BaseNode):
             calc_model_hash,
             include_prompts=use_workflow_prompts,
         )
-        if manual_positive:
-            pnginfo_dict_src["Positive prompt"] = manual_positive_value
-        if manual_negative:
-            pnginfo_dict_src["Negative prompt"] = manual_negative_value
         for k, v in extra_metadata.items():
             if k and v:
                 pnginfo_dict_src[k] = v.replace(",", "/")
 
         results = []
         file_path_list = []
-        for index, image in enumerate(images):
-            i = 255.0 * image.cpu().numpy()
+        batch_size = len(image_tensors)
+        primary_image = image_tensors[0]
+
+        for index, image in enumerate(image_tensors):
+            image_array = image.cpu().numpy() if hasattr(image, "cpu") else np.asarray(image)
+            i = 255.0 * image_array
             img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
 
             pnginfo_dict = pnginfo_dict_src.copy()
-            if len(images) >= 2:
+            if batch_size >= 2:
                 pnginfo_dict["Batch index"] = index
-                pnginfo_dict["Batch size"] = len(images)
+                pnginfo_dict["Batch size"] = batch_size
+
+            positive_value, apply_positive = self._select_prompt_for_index(
+                positive_prompts, index
+            )
+            negative_value, apply_negative = self._select_prompt_for_index(
+                negative_prompts, index
+            )
+
+            if apply_positive:
+                pnginfo_dict["Positive prompt"] = positive_value
+            if apply_negative:
+                pnginfo_dict["Negative prompt"] = negative_value
 
             parameters = Capture.gen_parameters_str(pnginfo_dict)
             filename_prefix = self.format_filename(filename_prefix, pnginfo_dict)
@@ -115,12 +158,15 @@ class SendToEagleWithMetadata(BaseNode):
                 subfolder,
                 filename_prefix,
             ) = folder_paths.get_save_image_path(
-                filename_prefix, self.output_dir, images[0].shape[1], images[0].shape[0]
+                filename_prefix,
+                self.output_dir,
+                primary_image.shape[1],
+                primary_image.shape[0],
             )
             base_filename = filename
             if add_counter_to_filename:
                 base_filename += f"_{counter:05}_"
-            elif len(images) >= 2:
+            elif batch_size >= 2:
                 base_filename += f"({index})"
 
             # jpegの場合は拡張子をjpgに変更（jpegのままだとEagleに送信した場合に .jpeg.jpg となるため）
@@ -286,6 +332,77 @@ class SendToEagleWithMetadata(BaseNode):
 
         return filename
     
+    @staticmethod
+    def _unwrap_to_value(value):
+        while isinstance(value, list) and len(value) == 1:
+            value = value[0]
+        return value
+
+    @staticmethod
+    def _unwrap_scalar(value):
+        value = SendToEagleWithMetadata._unwrap_to_value(value)
+        if isinstance(value, list):
+            return value[0] if value else None
+        return value
+
+    @classmethod
+    def _normalize_prompt_input(cls, prompt_input):
+        if isinstance(prompt_input, list):
+            normalized = []
+            for item in prompt_input:
+                if isinstance(item, list):
+                    normalized.extend(cls._normalize_prompt_input(item))
+                else:
+                    normalized.append(cls._coerce_prompt_text(item))
+            return normalized
+        return cls._coerce_prompt_text(prompt_input)
+
+    @staticmethod
+    def _coerce_prompt_text(value):
+        if isinstance(value, str):
+            return value.strip()
+        return ""
+
+    @staticmethod
+    def _prompt_has_manual(prompt_source):
+        if isinstance(prompt_source, list):
+            return len(prompt_source) > 0
+        if isinstance(prompt_source, str):
+            return prompt_source != ""
+        return False
+
+    @staticmethod
+    def _select_prompt_for_index(prompt_source, index):
+        if isinstance(prompt_source, list):
+            if 0 <= index < len(prompt_source):
+                return prompt_source[index], True
+            return "", True
+        if isinstance(prompt_source, str) and prompt_source != "":
+            return prompt_source, True
+        return "", False
+
+    @classmethod
+    def _flatten_image_batch(cls, images):
+        flattened = []
+
+        def _collect(item):
+            if item is None:
+                return
+            if isinstance(item, (list, tuple)):
+                for sub_item in item:
+                    _collect(sub_item)
+                return
+            if hasattr(item, "shape"):
+                shape_len = len(item.shape)
+                if shape_len >= 4:
+                    for idx in range(item.shape[0]):
+                        _collect(item[idx])
+                    return
+            flattened.append(item)
+
+        _collect(images)
+        return flattened
+
     @classmethod
     def create_tags(cls, tag_pattern, custom_tag_pattern, memo, extra_metadata, pnginfo_dict) -> list:
         results = []
