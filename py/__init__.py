@@ -40,7 +40,7 @@ def wrapped_get_input_data(inputs, class_def, unique_id, execution_list=None, dy
             result,
             execution_list,
             dynprompt,
-            extra_data,
+            extra_data if extra_data is not None else {},
         )
     except Exception:
         pass
