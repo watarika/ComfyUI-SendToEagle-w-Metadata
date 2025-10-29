@@ -40,10 +40,10 @@ class SendToEagleWithMetadata(BaseNode):
         self.api_token = os.environ.get("EAGLE_API_TOKEN", None) # Go to Preferences > Developer Settings to generate and configure your API token.
         self.eagle_api = EagleAPI(self.eagle_server_url, self.api_token)
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("filepath",)
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("filepath", "filepath_count")
     INPUT_IS_LIST = True
-    OUTPUT_IS_LIST = (True,)
+    OUTPUT_IS_LIST = (True, False)
     OUTPUT_NODE = True
 
     pattern_format = re.compile(r"(%[^%]+%)")
@@ -99,7 +99,7 @@ class SendToEagleWithMetadata(BaseNode):
 
         image_tensors = self._flatten_image_batch(images)
         if not image_tensors:
-            return ([],)
+            return ([], 0)
 
         positive_prompts = self._normalize_prompt_input(positive)
         negative_prompts = self._normalize_prompt_input(negative)
@@ -230,7 +230,7 @@ class SendToEagleWithMetadata(BaseNode):
             file_path_list.append(file_path)
             counter += 1
 
-        return (file_path_list,)
+        return (file_path_list, len(file_path_list))
 
     @classmethod
     def gen_pnginfo(
