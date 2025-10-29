@@ -58,6 +58,8 @@ def post_get_input_data(inputs, class_def, unique_id, result, execution_list=Non
         real_node_id = dynprompt.get_real_node_id(unique_id)
         runtime_input_cache[real_node_id] = entry
     except Exception:
+        # Silently ignore if real_node_id is not available (e.g., in certain node contexts).
+        # The entry is already cached with display_node_id and will be cached with unique_id below.
         pass
 
     runtime_input_cache[unique_id] = entry
