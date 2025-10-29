@@ -158,6 +158,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/10/29 1.1.2 Fixed to correctly save the value for each loop iteration to metadata when called multiple times within a loop
 - 2025/10/29 1.1.1 Add the size of the filepath (list) to the output
 - 2025/10/29 1.1.0 Added support for supplying per-image positive/negative prompts via list inputs
 - 2025/10/28 1.0.6 Changed to no preview for improved performance

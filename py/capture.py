@@ -24,6 +24,30 @@ class _ExecutionListProxy:
 
 
 class Capture:
+    @staticmethod
+    def _select_latest_value(value):
+        """Return the most recent meaningful entry from a potentially nested list/tuple."""
+        if isinstance(value, (list, tuple)):
+            for item in reversed(value):
+                resolved = Capture._select_latest_value(item)
+                if resolved is not None:
+                    return resolved
+            return None
+        return value
+
+    @staticmethod
+    def _latest_value_from_entries(entries):
+        for entry in reversed(entries):
+            if entry is None:
+                continue
+            if isinstance(entry, (list, tuple)) and len(entry) >= 2:
+                value = entry[1]
+            else:
+                value = entry
+            if value is not None:
+                return value
+        return None
+
     @classmethod
     def get_inputs(cls, calc_model_hash, include_prompts=True):
         inputs = defaultdict(list)
@@ -41,9 +65,22 @@ class Capture:
                 continue
             obj_class = NODE_CLASS_MAPPINGS[class_type]
             node_inputs = prompt[node_id]["inputs"]
-            input_data = get_input_data(
-                node_inputs, obj_class, node_id, execution_list, dynprompt, extra_data
-            )
+            runtime_entry = hook.runtime_input_cache.get(node_id)
+            if runtime_entry is not None:
+                input_data = (
+                    runtime_entry.get("inputs", {}),
+                    runtime_entry.get("missing", {}),
+                    runtime_entry.get("hidden", {}),
+                )
+            else:
+                input_data = get_input_data(
+                    node_inputs,
+                    obj_class,
+                    node_id,
+                    execution_list,
+                    dynprompt,
+                    extra_data,
+                )
             
             metas = CAPTURE_FIELD_LIST[class_type]
             for meta, field_data in metas.items():
@@ -74,9 +111,7 @@ class Capture:
                 value = input_data[0].get(field_name)
                 if value is not None:
                     format = field_data.get("format")
-                    v = value
-                    if isinstance(value, list) and len(value) > 0:
-                        v = value[0]
+                    v = cls._select_latest_value(value)
                     if format is not None:
                         # formatのメソッド名が「_hash」で終わる場合、かつ、calc_model_hashがFalseの場合はメソッドを呼び出さずNoneにする
                         if format.__name__.endswith("_hash") and not calc_model_hash:
@@ -96,9 +131,10 @@ class Capture:
         pnginfo_dict = {}
 
         def update_pnginfo_dict(inputs, metafield, key):
-            x = inputs.get(metafield, [])
-            if len(x) > 0:
-                pnginfo_dict[key] = x[0][1]
+            entries = inputs.get(metafield, [])
+            latest_value = cls._latest_value_from_entries(entries)
+            if latest_value is not None:
+                pnginfo_dict[key] = latest_value
 
         update_pnginfo_dict(
             inputs_before_sampler_node, MetaField.POSITIVE_PROMPT, "Positive prompt"
@@ -115,13 +151,13 @@ class Capture:
         if (save_civitai_sampler):
             pnginfo_dict["Sampler"] = cls.get_sampler_for_civitai(sampler_names, schedulers)
         else:
-            if len(sampler_names) > 0:
-                pnginfo_dict["Sampler"] = sampler_names[0][1]
+            sampler_name_value = cls._latest_value_from_entries(sampler_names)
+            scheduler_value = cls._latest_value_from_entries(schedulers)
+            if sampler_name_value is not None:
+                pnginfo_dict["Sampler"] = sampler_name_value
 
-                if len(schedulers) > 0:
-                    scheduler = schedulers[0][1]
-                    if scheduler != "normal":
-                        pnginfo_dict["Sampler"] += "_" + scheduler
+                if scheduler_value and scheduler_value != "normal":
+                    pnginfo_dict["Sampler"] += "_" + scheduler_value
 
         update_pnginfo_dict(inputs_before_sampler_node, MetaField.CFG, "CFG scale")
         update_pnginfo_dict(inputs_before_sampler_node, MetaField.SEED, "Seed")
@@ -132,8 +168,10 @@ class Capture:
 
         image_widths = inputs_before_sampler_node.get(MetaField.IMAGE_WIDTH, [])
         image_heights = inputs_before_sampler_node.get(MetaField.IMAGE_HEIGHT, [])
-        if len(image_widths) > 0 and len(image_heights) > 0:
-            pnginfo_dict["Size"] = f"{image_widths[0][1]}x{image_heights[0][1]}"
+        width_value = cls._latest_value_from_entries(image_widths)
+        height_value = cls._latest_value_from_entries(image_heights)
+        if width_value is not None and height_value is not None:
+            pnginfo_dict["Size"] = f"{width_value}x{height_value}"
 
         update_pnginfo_dict(inputs_before_sampler_node, MetaField.MODEL_NAME, "Model")
         if calc_model_hash:
@@ -180,12 +218,14 @@ class Capture:
     ):
         resource_hashes = {}
         model_hashes = inputs_before_sampler_node.get(MetaField.MODEL_HASH, [])
-        if len(model_hashes) > 0:
-            resource_hashes["model"] = model_hashes[0][1]
+        model_hash_value = cls._latest_value_from_entries(model_hashes)
+        if model_hash_value is not None:
+            resource_hashes["model"] = model_hash_value
 
         vae_hashes = inputs_before_this_node.get(MetaField.VAE_HASH, [])
-        if len(vae_hashes) > 0:
-            resource_hashes["vae"] = vae_hashes[0][1]
+        vae_hash_value = cls._latest_value_from_entries(vae_hashes)
+        if vae_hash_value is not None:
+            resource_hashes["vae"] = vae_hash_value
 
         lora_model_names = inputs_before_sampler_node.get(MetaField.LORA_MODEL_NAME, [])
         lora_model_hashes = inputs_before_sampler_node.get(
@@ -276,10 +316,10 @@ class Capture:
                 return sampler + " Karras"
             return sampler
 
-        if len(sampler_names) > 0:
-            sampler = sampler_names[0][1]
-        if len(schedulers) > 0:
-            scheduler = schedulers[0][1]
+        sampler = cls._latest_value_from_entries(sampler_names)
+        scheduler = cls._latest_value_from_entries(schedulers) or "normal"
+        if sampler is None:
+            return ""
 
         match sampler:
             case "euler" | "euler_cfg_pp":
@@ -315,6 +355,6 @@ class Capture:
             case "uni_pc" | "uni_pc_bh2":
                 return "UniPC"
             
-        if scheduler == "normal":
+        if scheduler == "normal" or scheduler is None:
             return sampler
         return sampler + "_" + scheduler

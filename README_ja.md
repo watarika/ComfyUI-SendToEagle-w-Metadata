@@ -154,6 +154,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 変更履歴
+- 2025/10/29 1.1.2 ループにより複数回呼び出された場合にループごとの値を正しくメタデータに保存するように修正
 - 2025/10/29 1.1.1 出力にfilepath(リスト)のサイズを追加
 - 2025/10/29 1.1.0 positive/negative のリスト入力でバッチごとにプロンプトを設定できるよう対応
 - 2025/10/28 1.0.6 パフォーマンス向上のためプレビューなしに変更
