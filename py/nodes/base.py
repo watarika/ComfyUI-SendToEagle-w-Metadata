@@ -67,12 +67,27 @@ class SendToEagleWithMetadata(BaseNode):
         eagle_folder="",
         memo="",
         extra_metadata={},
+        positive="",
+        negative="",
         prompt=None,
         extra_pnginfo=None,
     ):
+        manual_positive_value = positive.strip() if isinstance(positive, str) else ""
+        manual_negative_value = negative.strip() if isinstance(negative, str) else ""
+        manual_positive = manual_positive_value != ""
+        manual_negative = manual_negative_value != ""
+        use_workflow_prompts = not (manual_positive and manual_negative)
         pnginfo_dict_src = self.gen_pnginfo(
-            sampler_selection_method, sampler_selection_node_id, civitai_sampler, calc_model_hash
+            sampler_selection_method,
+            sampler_selection_node_id,
+            civitai_sampler,
+            calc_model_hash,
+            include_prompts=use_workflow_prompts,
         )
+        if manual_positive:
+            pnginfo_dict_src["Positive prompt"] = manual_positive_value
+        if manual_negative:
+            pnginfo_dict_src["Negative prompt"] = manual_negative_value
         for k, v in extra_metadata.items():
             if k and v:
                 pnginfo_dict_src[k] = v.replace(",", "/")
@@ -173,10 +188,15 @@ class SendToEagleWithMetadata(BaseNode):
 
     @classmethod
     def gen_pnginfo(
-        cls, sampler_selection_method, sampler_selection_node_id, save_civitai_sampler, calc_model_hash
+        cls,
+        sampler_selection_method,
+        sampler_selection_node_id,
+        save_civitai_sampler,
+        calc_model_hash,
+        include_prompts=True,
     ):
         # get all node inputs
-        inputs = Capture.get_inputs(calc_model_hash)
+        inputs = Capture.get_inputs(calc_model_hash, include_prompts)
 
         # get sampler node before this node
         if cls.__name__ == "SendToEagleWithMetadataFull":
