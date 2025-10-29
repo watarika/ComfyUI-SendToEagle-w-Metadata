@@ -355,6 +355,6 @@ class Capture:
             case "uni_pc" | "uni_pc_bh2":
                 return "UniPC"
             
-        if scheduler == "normal" or scheduler is None:
+        if scheduler == "normal":
             return sampler
         return sampler + "_" + scheduler
