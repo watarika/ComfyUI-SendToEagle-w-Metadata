@@ -43,6 +43,8 @@ def wrapped_get_input_data(inputs, class_def, unique_id, execution_list=None, dy
             extra_data if extra_data is not None else {},
         )
     except Exception:
+        # Silently ignore errors in post_get_input_data to avoid breaking the main execution.
+        # This function captures metadata for SendToEagle nodes and is non-critical.
         pass
     return result
 
