@@ -157,6 +157,10 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Please check the following directory for supported extensions.
   - [py/defs/ext/](py/defs/ext/)
 
+## Known Issues
+- When using multiple instances of nodes equivalent to “CLIP Text Encode (Prompt)” within a loop, the first workflow execution works correctly. However, on subsequent executions, if the input to “CLIP Text Encode (Prompt)” remains unchanged and the node is not re-executed due to caching, the prompt cannot be retrieved correctly (All prompts in the loop will take the value from the first loop). This behavior is due to ComfyUI's caching mechanism, making a fix on the custom node side difficult.
+- Workaround: Explicitly input values into the node's positive/negative inputs.
+
 ## Change History
 - 2025/10/29 1.1.2 Fixed to correctly save the value for each loop iteration to metadata when called multiple times within a loop
 - 2025/10/29 1.1.1 Add the size of the filepath (list) to the output
