@@ -154,7 +154,9 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
   - [py/defs/ext/](py/defs/ext/)
 
 ## 既知の問題
-- ループで複数回の "CLIP Text Encode (Prompt)" 相当のノードを使用する場合、1回目のワークフロー実行は正しく動作しますが、2回目以降のワークフロー実行で "CLIP Text Encode (Prompt)" の入力に変化がなく "CLIP Text Encode (Prompt)" がキャッシュにより再実行されない場合、正しくプロンプトが取得できません（ループのすべてのプロンプトが1ループ目の値になってしまいます）。ComfyUIのキャッシュ機構による動作のため、カスタムノード側での対応は困難です。
+- ループで複数回の "CLIP Text Encode (Prompt)" 相当のノードを使用する場合、1回目のワークフロー実行は正しく動作しますが、2回目以降のワークフロー実行で "CLIP Text Encode (Prompt)" の入力に変化がなく "CLIP Text Encode (Prompt)" がキャッシュにより再実行されない場合、正しくプロンプトが取得できません（ループのすべてのプロンプトが1ループ目の値になってしまいます）。
+- "CLIP Text Encode (Prompt)" の入力または上流の入力が前回の実行と異なるなど、"CLIP Text Encode (Prompt)" 相当のノードが再実行された場合は2回目以降のワークフロー実行でも正しく動作します。
+- この動作は、ComfyUIのキャッシュ機構による動作のため、カスタムノード側での対応は困難です。
 - 対応方法：ノードの入力の positive/negative に明示的に値を入力するようにしてください
 
 ## 変更履歴

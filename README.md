@@ -158,7 +158,9 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Known Issues
-- When using multiple instances of nodes equivalent to “CLIP Text Encode (Prompt)” within a loop, the first workflow execution works correctly. However, on subsequent executions, if the input to “CLIP Text Encode (Prompt)” remains unchanged and the node is not re-executed due to caching, the prompt cannot be retrieved correctly (All prompts in the loop will take the value from the first loop). This behavior is due to ComfyUI's caching mechanism, making a fix on the custom node side difficult.
+- When using multiple “CLIP Text Encode (Prompt)” equivalent nodes in a loop, the first workflow execution works correctly. However, if the input to “CLIP Text Encode (Prompt)” remains unchanged and the node is not re-executed via caching during subsequent workflow executions, the prompt cannot be retrieved correctly (All prompts in the loop will end up being the value from the first loop iteration).
+- If the input to “CLIP Text Encode (Prompt)” or its upstream inputs differ from the previous execution, causing the equivalent node to re-execute, it will function correctly in subsequent workflow runs.
+- This behavior is due to ComfyUI's caching mechanism, making it difficult to address on the custom node side.
 - Workaround: Explicitly input values into the node's positive/negative inputs.
 
 ## Change History
