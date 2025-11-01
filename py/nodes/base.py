@@ -74,7 +74,11 @@ class SendToEagleWithMetadata(BaseNode):
         extra_pnginfo=None,
     ):
         images = self._unwrap_to_value(images)
-        filename_prefix = self._unwrap_scalar(filename_prefix) or "ComfyUI"
+        default_filename_prefix = "ComfyUI"
+        filename_prefix_source = self._normalize_batch_input(
+            self._unwrap_to_value(filename_prefix),
+            self._coerce_string_value,
+        )
         sampler_selection_method = self._unwrap_scalar(sampler_selection_method)
         sampler_selection_node_id = self._unwrap_scalar(sampler_selection_node_id)
         file_format = self._unwrap_scalar(file_format)
@@ -87,11 +91,22 @@ class SendToEagleWithMetadata(BaseNode):
         save_only_no_send = self._unwrap_scalar(save_only_no_send)
         send_metadata_as_memo = self._unwrap_scalar(send_metadata_as_memo)
         tag_pattern = self._unwrap_scalar(tag_pattern)
-        custom_tag_pattern = self._unwrap_scalar(custom_tag_pattern)
-        eagle_folder = self._unwrap_scalar(eagle_folder)
-        memo_value = self._unwrap_scalar(memo)
-        memo = memo_value if isinstance(memo_value, str) else ""
-        extra_metadata = self._unwrap_scalar(extra_metadata) or {}
+        custom_tag_pattern_source = self._normalize_batch_input(
+            self._unwrap_to_value(custom_tag_pattern),
+            self._coerce_string_value,
+        )
+        eagle_folder_source = self._normalize_batch_input(
+            self._unwrap_to_value(eagle_folder),
+            self._coerce_string_value,
+        )
+        memo_source = self._normalize_batch_input(
+            self._unwrap_to_value(memo),
+            self._coerce_string_value,
+        )
+        extra_metadata_source = self._normalize_batch_input(
+            self._unwrap_to_value(extra_metadata),
+            self._coerce_metadata_value,
+        )
         positive = self._unwrap_to_value(positive)
         negative = self._unwrap_to_value(negative)
         prompt = self._unwrap_to_value(prompt)
@@ -115,14 +130,13 @@ class SendToEagleWithMetadata(BaseNode):
             calc_model_hash,
             include_prompts=use_workflow_prompts,
         )
-        for k, v in extra_metadata.items():
-            if k and v:
-                pnginfo_dict_src[k] = v.replace(",", "/")
 
         results = []
         file_path_list = []
         batch_size = len(image_tensors)
         primary_image = image_tensors[0]
+
+        folder_id_cache = {}
 
         for index, image in enumerate(image_tensors):
             image_array = image.cpu().numpy() if hasattr(image, "cpu") else np.asarray(image)
@@ -130,6 +144,14 @@ class SendToEagleWithMetadata(BaseNode):
             img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
 
             pnginfo_dict = pnginfo_dict_src.copy()
+            extra_metadata_value = self._select_batch_value(extra_metadata_source, index, {})
+            if isinstance(extra_metadata_value, dict):
+                extra_metadata_value = extra_metadata_value.copy()
+            else:
+                extra_metadata_value = {}
+            for k, v in extra_metadata_value.items():
+                if k and v:
+                    pnginfo_dict[k] = str(v).replace(",", "/")
             if batch_size >= 2:
                 pnginfo_dict["Batch index"] = index
                 pnginfo_dict["Batch size"] = batch_size
@@ -147,8 +169,13 @@ class SendToEagleWithMetadata(BaseNode):
                 pnginfo_dict["Negative prompt"] = negative_value
 
             parameters = Capture.gen_parameters_str(pnginfo_dict)
-            filename_prefix = self.format_filename(filename_prefix, pnginfo_dict)
-            output_path = os.path.join(self.output_dir, filename_prefix)
+            filename_prefix_value = self._select_batch_value(
+                filename_prefix_source, index, default_filename_prefix
+            )
+            if not filename_prefix_value:
+                filename_prefix_value = default_filename_prefix
+            formatted_filename_prefix = self.format_filename(filename_prefix_value, pnginfo_dict)
+            output_path = os.path.join(self.output_dir, formatted_filename_prefix)
             if not os.path.exists(os.path.dirname(output_path)):
                 os.makedirs(os.path.dirname(output_path), exist_ok=True)
             (
@@ -156,9 +183,9 @@ class SendToEagleWithMetadata(BaseNode):
                 filename,
                 counter,
                 subfolder,
-                filename_prefix,
+                _filename_prefix_from_path,
             ) = folder_paths.get_save_image_path(
-                filename_prefix,
+                formatted_filename_prefix,
                 self.output_dir,
                 primary_image.shape[1],
                 primary_image.shape[0],
@@ -199,26 +226,41 @@ class SendToEagleWithMetadata(BaseNode):
 
             if not save_only_no_send:
                 # Eagleフォルダが指定されているならフォルダIDを取得
-                folder_id = self.eagle_api.find_or_create_folder(eagle_folder)
+                eagle_folder_value = self._select_batch_value(eagle_folder_source, index, "")
+                folder_cache_key = eagle_folder_value or ""
+                if folder_cache_key not in folder_id_cache:
+                    folder_id_cache[folder_cache_key] = self.eagle_api.find_or_create_folder(eagle_folder_value)
+                folder_id = folder_id_cache[folder_cache_key]
 
                 # Eagleに送るURLを作成
                 url = f"{self.comfyui_url}/api/view?filename={file_name}&type={self.type}&subfolder={subfolder}"
 
                 # annotationを作成
                 annotation = ""
+                memo_value = self._select_batch_value(memo_source, index, "")
+                memo_value = memo_value if isinstance(memo_value, str) else str(memo_value)
                 if send_metadata_as_memo:
                     annotation += parameters
-                    if memo:
-                        annotation += "\nMemo: " + memo
-                elif memo:
-                    annotation = memo
+                    if memo_value:
+                        annotation += "\nMemo: " + memo_value
+                elif memo_value:
+                    annotation = memo_value
 
                 # Eagleに送る情報を作成
+                custom_tag_pattern_value = self._select_batch_value(
+                    custom_tag_pattern_source, index, ""
+                )
                 item = {
                     "url": url,
                     "name": file_name,
                     "annotation": annotation,
-                    "tags": self.create_tags(tag_pattern, custom_tag_pattern, memo, extra_metadata, pnginfo_dict),
+                    "tags": self.create_tags(
+                        tag_pattern,
+                        custom_tag_pattern_value,
+                        memo_value,
+                        extra_metadata_value,
+                        pnginfo_dict,
+                    ),
                 }
 
                 # Eagleに送る
@@ -380,6 +422,51 @@ class SendToEagleWithMetadata(BaseNode):
         if isinstance(prompt_source, str) and prompt_source != "":
             return prompt_source, True
         return "", False
+
+    @classmethod
+    def _normalize_batch_input(cls, value, coerce_fn=None):
+        value = cls._unwrap_to_value(value)
+        if isinstance(value, list):
+            normalized = []
+            for item in value:
+                if isinstance(item, list):
+                    normalized.extend(cls._normalize_batch_input(item, coerce_fn))
+                else:
+                    normalized.append(cls._apply_coerce(item, coerce_fn))
+            return normalized
+        return cls._apply_coerce(value, coerce_fn)
+
+    @staticmethod
+    def _apply_coerce(value, coerce_fn):
+        if coerce_fn is None:
+            return value
+        return coerce_fn(value)
+
+    @staticmethod
+    def _coerce_string_value(value):
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return ""
+        return str(value)
+
+    @staticmethod
+    def _coerce_metadata_value(value):
+        if isinstance(value, dict):
+            return value
+        if value is None:
+            return {}
+        return {}
+
+    @staticmethod
+    def _select_batch_value(source, index, default=None):
+        if isinstance(source, list):
+            if 0 <= index < len(source):
+                return source[index]
+            return default
+        if source is None or source == "":
+            return default
+        return source
 
     @classmethod
     def _flatten_image_batch(cls, images):

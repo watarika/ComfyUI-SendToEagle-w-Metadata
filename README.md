@@ -56,7 +56,11 @@ If you want to change these behaviors, use the `Send to Eagle With Metadata (Ext
 | custom_tag_pattern  | Specifies the tag pattern to be used when `tag_pattern` is `Custom`, separated by commas.<br>The following settings are available:<ul><li>Image metadata: `Positive prompt`, `Negative prompt`, `Steps`, `Sampler`, `CFG scale`, `Seed`, `Clip skip`, `Size`, `Model`, `Model hash`, `VAE`, `VAE hash`, `Batch index`, `Batch size`</li><li>Memo content: `Memo`</li><li>Additional metadata: The `Key` defined in `extra_metadata`</li></ul>Note: Items that do not match the above are added as tags as they are<br>Note: Metadata for which a value cannot be obtained is added with a value of `-` (e.g., `"Model hash: -"`)||
 | memo                | Specifies the text to be saved in the Eagle notes field. The specified text is appended with `"Memo:"` and saved at the end of the notes field                                                                                                                                                                    |
 | extra_metadata      | Allows you to add your own metadata to the saved image. Can be omitted if not needed.<br>Specifies the metadata to be added using the `Create Extra MetaData` node.                                                                                                                                                               |
-| positive / negative | Optional prompts to override the workflow prompts.<br>Accepts either a single string or a list of strings. When a list is supplied, each batch image receives the prompt at the same index; if the list is shorter than the batch, the remaining images use a blank prompt. When a single string is supplied, the same prompt applies to every image. |
+| positive / negative | This is an option input for explicitly specifying prompts, rather than automatically retrieving them from the workflow. Use this input when prompts cannot be automatically retrieved or when you wish to specify prompts yourself. |
+
+### Batch Support
+The inputs memo, custom_tag_pattern, extra_metadata, positive, and negative support batch images.  
+If an input is a list, the corresponding element is applied to each image in the batch index. If the list is shorter than the batch size, empty strings are used. If a single string is passed, the same string is applied to all images.
 
 ### Node Output
 
@@ -85,6 +89,10 @@ If you want to change these behaviors, use the `Send to Eagle With Metadata (Ext
 | calc_model_hash           | If `true`, calculates the hash value of the model and adds it to the metadata<br>Note: It takes time to calculate the hash value of the model                                                                                                                                                                                                                               |
 | send_metadata_as_memo     | <ul><li>`true`: Saves the metadata in the Eagle notes field. If there is input to `memo`, its content is appended with `"Memo:"` and saved after the metadata</li><li>`false`: Does not save the metadata in the Eagle notes field. Only the content of `memo` is saved in the Eagle notes field</li></ul>                                                              |
 | eagle_folder              | Specifies the image save destination folder in Eagle by FolderID or Folder name                                                                                                                                                                                                                                                                                          |
+
+#### Batch Support
+The filename_prefix and eagle_folder inputs support batch images.  
+If an input is a list, elements corresponding to the batch index are applied. If the list is shorter than the batch size, empty strings are used. If a single string is passed, the same string is applied to all images.
 
 <a id="filename-prefix-key"></a>
 ### Keys that can be specified in `filename_prefix`
@@ -164,6 +172,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Workaround: Explicitly input values into the node's positive/negative inputs.
 
 ## Change History
+- 2025/11/01 1.1.3 Added the ability to set different values for each image in a batch by passing a list to each input in filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadata.
 - 2025/10/29 1.1.2 Fixed to correctly save the value for each loop iteration to metadata when called multiple times within a loop
 - 2025/10/29 1.1.1 Add the size of the filepath (list) to the output
 - 2025/10/29 1.1.0 Added support for supplying per-image positive/negative prompts via list inputs

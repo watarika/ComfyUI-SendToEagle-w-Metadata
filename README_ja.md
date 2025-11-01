@@ -54,7 +54,12 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
 | custom_tag_pattern | `tag_pattern` が `Custom` の場合に使用するタグのパターンをカンマ区切りで指定します。<br>使用可能な設定は以下の通りです。<ul><li>画像メタデータ : `Positive prompt`, `Negative prompt`, `Steps`, `Sampler`, `CFG scale`, `Seed`, `Clip skip`, `Size`, `Model`, `Model hash`, `VAE`, `VAE hash`, `Batch index`, `Batch size`</li><li>メモの内容：`Memo`</li><li>追加メタデータ : `extra_metadata` で定義した `Key`</li></ul>※上記に当てはまらない項目はそのままタグとして付与されます<br>※値が取得できないメタデータは値に `-` を付与します（例 : `"Model hash: -"`） ||
 | memo | Eagle のメモ欄に保存するテキストを指定します。指定したテキストはメモ欄の最後尾に `"Memo:"` を付与して保存します |
 | extra_metadata | 保存する画像に独自のメタデータを追加できます。不要な場合は省略できます。<br>`Create Extra MetaData` ノードで追加するメタデータを指定します。 |
-| positive / negative | ワークフローから取得したプロンプトを上書きするオプション入力です。<br>単一の文字列または文字列のリストを受け付けます。リストを渡した場合はバッチのインデックスに応じた要素を適用し、リストがバッチ数より短い分は空文字になります。単一の文字列を渡した場合は全画像に同じプロンプトが適用されます。 |
+| positive / negative | ワークフローからプロンプトを自動取得せずに、明示的にプロンプトを指定するオプション入力です。自動的にプロンプトが取得できない場合や自分でプロンプトを指定したい場合、本入力を使用してください。 |
+
+#### バッチ対応
+
+memo, custom_tag_pattern, extra_metadata, positive, negative の各入力はバッチ画像に対応しています。  
+各入力がリストの場合はバッチのインデックスに応じた要素を適用し、リストがバッチ数より短い分は空文字になります。単一の文字列を渡した場合は全画像に同じ文字列が適用されます。
 
 ### ノードの出力
 - 保存した画像のファイルパスをフルパスで出力します（リスト形式）
@@ -81,6 +86,11 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
 | calc_model_hash | `true` の場合、モデルのハッシュ値を算出してメタデータに追加します<br>※モデルのハッシュ値を算出する時間がかかります |
 | send_metadata_as_memo  | <ul><li>`true` : メタデータを Eagle のメモ欄に保存します。`memo` の入力がある場合、その内容をメタデータの後に `"Memo:"` を付与して保存します</li><li>`false` : メタデータを Eagle のメモ欄に保存しません。Eagle のメモ欄には `memo` の内容のみ保存されます</li></ul> |
 | eagle_folder | 	Eagle 上での画像保存先フォルダを、FolderID または Folder名で指定します |
+
+#### バッチ対応
+
+filename_prefix, eagle_folder の各入力はバッチ画像に対応しています。  
+各入力がリストの場合はバッチのインデックスに応じた要素を適用し、リストがバッチ数より短い分は空文字になります。単一の文字列を渡した場合は全画像に同じ文字列が適用されます。
 
 <a id="filename-prefix-key"></a>
 ### `filename_prefix`で指定できるKey
@@ -160,6 +170,7 @@ git clone https://github.com/watarika/ComfyUI-SendToEagle-w-Metadata.git
 - 対応方法：ノードの入力の positive/negative に明示的に値を入力するようにしてください
 
 ## 変更履歴
+- 2025/11/01 1.1.3 filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadataの各入力にリストを渡すことでバッチの画像毎に異なる値を設定できるようにした
 - 2025/10/29 1.1.2 ループにより複数回呼び出された場合にループごとの値を正しくメタデータに保存するように修正
 - 2025/10/29 1.1.1 出力にfilepath(リスト)のサイズを追加
 - 2025/10/29 1.1.0 positive/negative のリスト入力でバッチごとにプロンプトを設定できるよう対応
