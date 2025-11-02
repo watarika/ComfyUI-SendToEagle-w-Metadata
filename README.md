@@ -172,6 +172,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Workaround: Explicitly input values into the node's positive/negative inputs.
 
 ## Change History
+- 2025/11/02 1.1.4 Fixed a bug that caused errors in certain workflows
 - 2025/11/01 1.1.3 Added the ability to set different values for each image in a batch by passing a list to each input in filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadata.
 - 2025/10/29 1.1.2 Fixed to correctly save the value for each loop iteration to metadata when called multiple times within a loop
 - 2025/10/29 1.1.1 Add the size of the filepath (list) to the output
