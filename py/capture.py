@@ -13,6 +13,13 @@ from execution import get_input_data
 from comfy_execution.graph import DynamicPrompt
 
 
+class _FallbackOutputsCache(dict):
+    """Dictionary shim that mimics ExecutionList cache updates."""
+
+    def set(self, key, value):
+        self[key] = value
+
+
 class _ExecutionListProxy:
     """Minimal wrapper mimicking ExecutionList cache lookups for metadata capture."""
 
@@ -65,8 +72,12 @@ class Capture:
         inputs = defaultdict(list)
         prompt = hook.current_prompt
         extra_data = hook.current_extra_data
-        outputs = hook.prompt_executer.caches.outputs
-        execution_list = _ExecutionListProxy(outputs)
+        prompt_executor = getattr(hook, "prompt_executer", None)
+        caches = getattr(prompt_executor, "caches", None) if prompt_executor else None
+        raw_outputs = getattr(caches, "outputs", None) if caches else None
+        using_real_outputs = raw_outputs is not None
+        outputs = raw_outputs if using_real_outputs else _FallbackOutputsCache()
+        execution_list = _ExecutionListProxy(outputs) if using_real_outputs else None
         dynprompt = DynamicPrompt(prompt)
 
         for node_id, obj in prompt.items():
@@ -85,14 +96,24 @@ class Capture:
                     runtime_entry.get("hidden", {}),
                 )
             else:
-                input_data = get_input_data(
-                    node_inputs,
-                    obj_class,
-                    node_id,
-                    execution_list,
-                    dynprompt,
-                    extra_data,
-                )
+                if execution_list is None:
+                    # Without an execution list cache the inputs are unavailable (e.g. when
+                    # custom hooks lost the PromptExecutor reference). Skip gracefully to
+                    # avoid crashing the whole workflow – metadata will just be partial.
+                    continue
+                try:
+                    input_data = get_input_data(
+                        node_inputs,
+                        obj_class,
+                        node_id,
+                        execution_list,
+                        dynprompt,
+                        extra_data,
+                    )
+                except Exception:
+                    # The upstream cache might still be rebuilding; skip capturing this
+                    # node and continue harvesting what is available.
+                    continue
             
             metas = CAPTURE_FIELD_LIST[class_type]
             for meta, field_data in metas.items():

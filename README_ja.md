@@ -170,6 +170,7 @@ filename_prefix, eagle_folder の各入力はバッチ画像に対応してい�
 - 対応方法：ノードの入力の positive/negative に明示的に値を入力するようにしてください
 
 ## 変更履歴
+- 2025/11/03 1.1.5 「AttributeError: 'NoneType' object has no attribute 'caches'」になる場合があるバグを修正
 - 2025/11/02 1.1.4 ワークフローによってはエラーになるバグを修正
 - 2025/11/01 1.1.3 filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadataの各入力にリストを渡すことでバッチの画像毎に異なる値を設定できるようにした
 - 2025/10/29 1.1.2 ループにより複数回呼び出された場合にループごとの値を正しくメタデータに保存するように修正
