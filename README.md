@@ -64,7 +64,9 @@ If an input is a list, the corresponding element is applied to each image in the
 
 ### Node Output
 
-- Outputs the full file path of the saved image (list format)
+- filepath: Outputs the full file paths of saved images (in list format)
+- filepath_count: Outputs the number of saved images
+- image: Outputs the input image as received
 
 ## Send to Eagle With Metadata (Extended)
 
@@ -172,6 +174,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Workaround: Explicitly input values into the node's positive/negative inputs.
 
 ## Change History
+- 2025/11/05 1.1.6 Added IMAGE to output. Outputs the IMAGE received as input without modification.
 - 2025/11/03 1.1.5 Fixed a bug that could cause the error "AttributeError: 'NoneType' object has no attribute 'caches'".
 - 2025/11/02 1.1.4 Fixed a bug that caused errors in certain workflows
 - 2025/11/01 1.1.3 Added the ability to set different values for each image in a batch by passing a list to each input in filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadata.

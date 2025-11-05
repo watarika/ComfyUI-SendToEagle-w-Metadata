@@ -62,7 +62,9 @@ memo, custom_tag_pattern, extra_metadata, positive, negative の各入力はバ�
 各入力がリストの場合はバッチのインデックスに応じた要素を適用し、リストがバッチ数より短い分は空文字になります。単一の文字列を渡した場合は全画像に同じ文字列が適用されます。
 
 ### ノードの出力
-- 保存した画像のファイルパスをフルパスで出力します（リスト形式）
+- filepath: 保存した画像のファイルパスをフルパスで出力します（リスト形式）
+- filepath_count: 保存した画像の件数を出力します
+- image: 入力で受け取った画像をそのまま出力します
 
 ## Send to Eagle With Metadata (Extended)
 - 入力として受け取った `images` をメタデータ(PNGInfo)付きの画像としてストレージに保存した後、Eagleに送信します
@@ -170,6 +172,7 @@ filename_prefix, eagle_folder の各入力はバッチ画像に対応してい�
 - 対応方法：ノードの入力の positive/negative に明示的に値を入力するようにしてください
 
 ## 変更履歴
+- 2025/11/05 1.1.6 出力にIMAGEを追加。入力で受け取ったIMAGEをそのまま出力する
 - 2025/11/03 1.1.5 「AttributeError: 'NoneType' object has no attribute 'caches'」になる場合があるバグを修正
 - 2025/11/02 1.1.4 ワークフローによってはエラーになるバグを修正
 - 2025/11/01 1.1.3 filename_prefix/custom_tag_pattern/eagle_folder/memo/extra_metadataの各入力にリストを渡すことでバッチの画像毎に異なる値を設定できるようにした
