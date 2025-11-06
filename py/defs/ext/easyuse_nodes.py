@@ -4,26 +4,26 @@ from ..formatters import calc_model_hash, calc_lora_hash, convert_skip_clip
 import re
 
 def get_lora_model_name_stack(node_id, obj, prompt, extra_data, outputs, input_data):
-    return get_lora_data_stack(input_data, "lora_\d_name")
+    return get_lora_data_stack(input_data, r"lora_\d_name")
 
 
 def get_lora_model_hash_stack(node_id, obj, prompt, extra_data, outputs, input_data):
     return [
         calc_lora_hash(model_name, input_data)
-        for model_name in get_lora_data_stack(input_data, "lora_\d_name")
+        for model_name in get_lora_data_stack(input_data, r"lora_\d_name")
     ]
 
 
 def get_lora_strength_model_stack(node_id, obj, prompt, extra_data, outputs, input_data):
     if input_data[0]["mode"][0] == "advanced":
-        return get_lora_data_stack(input_data, "lora_\d_model_strength")
-    return get_lora_data_stack(input_data, "lora_\d_strength")
+        return get_lora_data_stack(input_data, r"lora_\d_model_strength")
+    return get_lora_data_stack(input_data, r"lora_\d_strength")
 
 
 def get_lora_strength_clip_stack(node_id, obj, prompt, extra_data, outputs, input_data):
     if input_data[0]["mode"][0] == "advanced":
-        return get_lora_data_stack(input_data, "lora_\d_clip_strength")
-    return get_lora_data_stack(input_data, "lora_\d_strength")
+        return get_lora_data_stack(input_data, r"lora_\d_clip_strength")
+    return get_lora_data_stack(input_data, r"lora_\d_strength")
 
 
 def get_lora_data_stack(input_data, attribute):
