@@ -114,7 +114,7 @@ class SendToEagleWithMetadata(BaseNode):
 
         image_tensors = self._flatten_image_batch(images)
         if not image_tensors:
-            return ([], 0)
+            return ([], 0, images,)
 
         positive_prompts = self._normalize_prompt_input(positive)
         negative_prompts = self._normalize_prompt_input(negative)
