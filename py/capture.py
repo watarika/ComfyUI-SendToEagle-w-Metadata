@@ -156,6 +156,8 @@ class Capture:
                             v = value[index]
                         else:
                             v = value[0]
+                    else:
+                        v = value
 
                     if format is not None:
                         # formatのメソッド名が「_hash」で終わる場合、かつ、calc_model_hashがFalseの場合はメソッドを呼び出さずNoneにする
