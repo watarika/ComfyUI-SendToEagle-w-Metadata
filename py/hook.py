@@ -1,6 +1,4 @@
 from .nodes.node import SendToEagleWithMetadataFull, SendToEagleWithMetadataSimple
-from .defs.captures import CAPTURE_FIELD_LIST
-from .defs.textencodes import TEXT_ENCODE_CLASSES
 
 current_prompt = {}
 current_extra_data = {}
