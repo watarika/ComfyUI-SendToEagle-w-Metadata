@@ -172,6 +172,7 @@ filename_prefix, eagle_folder の各入力はバッチ画像に対応してい�
 - 対応方法：ノードの入力の positive/negative に明示的に値を入力するようにしてください
 
 ## 変更履歴
+- 2025/11/06 1.1.7 ComfyUI-Easy-Useのノード解析に関するバグ修正
 - 2025/11/05 1.1.6 出力にIMAGEを追加。入力で受け取ったIMAGEをそのまま出力する
 - 2025/11/03 1.1.5 「AttributeError: 'NoneType' object has no attribute 'caches'」になる場合があるバグを修正
 - 2025/11/02 1.1.4 ワークフローによってはエラーになるバグを修正

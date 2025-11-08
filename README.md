@@ -174,6 +174,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Workaround: Explicitly input values into the node's positive/negative inputs.
 
 ## Change History
+- 2025/11/06 1.1.7 Bug Fix for Node Analysis in ComfyUI-Easy-Use
 - 2025/11/05 1.1.6 Added IMAGE to output. Outputs the IMAGE received as input without modification.
 - 2025/11/03 1.1.5 Fixed a bug that could cause the error "AttributeError: 'NoneType' object has no attribute 'caches'".
 - 2025/11/02 1.1.4 Fixed a bug that caused errors in certain workflows
