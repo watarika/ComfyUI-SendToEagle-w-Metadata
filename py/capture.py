@@ -20,28 +20,6 @@ class _FallbackOutputsCache(dict):
         self[key] = value
 
 
-class _ExecutionListProxy:
-    """Minimal wrapper mimicking ExecutionList cache lookups for metadata capture."""
-
-    def __init__(self, outputs_cache):
-        self._outputs_cache = outputs_cache
-
-    def get_output_cache(self, from_node_id, _to_node_id):
-        return self._outputs_cache.get(from_node_id)
-
-    def get_cache(self, from_node_id, _to_node_id):
-        cached = self._outputs_cache.get(from_node_id)
-        if cached is not None and hasattr(self._outputs_cache, "set"):
-            # Mirror ExecutionList behaviour by refreshing the entry on access.
-            self._outputs_cache.set(from_node_id, cached)
-        return cached
-
-    def cache_update(self, node_id, value):
-        if hasattr(self._outputs_cache, "set"):
-            # Keep outputs cache in sync when metadata hooks observe new values.
-            self._outputs_cache.set(node_id, value)
-
-
 class Capture:
     @staticmethod
     def _select_latest_value(value):
@@ -77,7 +55,6 @@ class Capture:
         raw_outputs = getattr(caches, "outputs", None) if caches else None
         using_real_outputs = raw_outputs is not None
         outputs = raw_outputs if using_real_outputs else _FallbackOutputsCache()
-        execution_list = _ExecutionListProxy(outputs) if using_real_outputs else None
         dynprompt = DynamicPrompt(prompt)
 
         for node_id, obj in prompt.items():
@@ -96,7 +73,7 @@ class Capture:
                     runtime_entry.get("hidden", {}),
                 )
             else:
-                if execution_list is None:
+                if outputs is None:
                     # Without an execution list cache the inputs are unavailable (e.g. when
                     # custom hooks lost the PromptExecutor reference). Skip gracefully to
                     # avoid crashing the whole workflow – metadata will just be partial.
@@ -106,7 +83,7 @@ class Capture:
                         node_inputs,
                         obj_class,
                         node_id,
-                        execution_list,
+                        outputs,
                         dynprompt,
                         extra_data,
                     )
