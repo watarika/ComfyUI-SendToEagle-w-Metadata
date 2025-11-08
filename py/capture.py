@@ -33,18 +33,7 @@ class Capture:
         return value
 
     @staticmethod
-    def _value_from_entries(entries, index):
-        entry = entries[index] if index < len(entries) else None
-        if entry is not None:
-            if isinstance(entry, (list, tuple)) and len(entry) >= 2:
-                value = entry[1]
-            else:
-                value = entry
-
-            if value is not None:
-                # print("Selected value from entries at index", index, ":", value, "for entry:", entries)
-                return value
-
+    def _value_from_entries(entries):
         for entry in entries:
             if entry is None:
                 continue
@@ -106,38 +95,25 @@ class Capture:
                 continue
             obj_class = NODE_CLASS_MAPPINGS[class_type]
             node_inputs = node_obj.get("inputs", {})
-            runtime_entry = hook.runtime_input_cache.get(node_id)
-            if runtime_entry is None and dynprompt is not None:
-                try:
-                    display_node_id = dynprompt.get_display_node_id(node_id)
-                    runtime_entry = hook.runtime_input_cache.get(display_node_id)
-                except Exception:
-                    pass
-            if runtime_entry is not None:
-                input_data = (
-                    runtime_entry.get("inputs", {}),
-                    runtime_entry.get("missing", {}),
-                    runtime_entry.get("hidden", {}),
+
+            if outputs is None:
+                # Without an execution list cache the inputs are unavailable (e.g. when
+                # custom hooks lost the PromptExecutor reference). Skip gracefully to
+                # avoid crashing the whole workflow – metadata will just be partial.
+                continue
+            try:
+                input_data = get_input_data(
+                    node_inputs,
+                    obj_class,
+                    node_id,
+                    outputs,
+                    dynprompt,
+                    extra_data,
                 )
-            else:
-                if outputs is None:
-                    # Without an execution list cache the inputs are unavailable (e.g. when
-                    # custom hooks lost the PromptExecutor reference). Skip gracefully to
-                    # avoid crashing the whole workflow – metadata will just be partial.
-                    continue
-                try:
-                    input_data = get_input_data(
-                        node_inputs,
-                        obj_class,
-                        node_id,
-                        outputs,
-                        dynprompt,
-                        extra_data,
-                    )
-                except Exception:
-                    # The upstream cache might still be rebuilding; skip capturing this
-                    # node and continue harvesting what is available.
-                    continue
+            except Exception:
+                # The upstream cache might still be rebuilding; skip capturing this
+                # node and continue harvesting what is available.
+                continue
 
             # if class_type not in ["KSampler"]:
             #     print("Capturing inputs for node:", node_id, "Class type:", class_type, "Input data:", input_data)
@@ -193,15 +169,16 @@ class Capture:
                     else:
                         inputs[meta].append((node_id, v))
 
+        # print("Final captured inputs:", dict(inputs))
         return inputs
 
     @classmethod
-    def gen_pnginfo_dict(cls, inputs_before_sampler_node, inputs_before_this_node, save_civitai_sampler, calc_model_hash, index):
+    def gen_pnginfo_dict(cls, inputs_before_sampler_node, inputs_before_this_node, save_civitai_sampler, calc_model_hash):
         pnginfo_dict = {}
 
         def update_pnginfo_dict(inputs, metafield, key):
             entries = inputs.get(metafield, [])
-            entry_value = cls._value_from_entries(entries, index)
+            entry_value = cls._value_from_entries(entries)
             if entry_value is not None:
                 pnginfo_dict[key] = entry_value
 
@@ -218,10 +195,10 @@ class Capture:
         schedulers = inputs_before_sampler_node.get(MetaField.SCHEDULER, [])
 
         if (save_civitai_sampler):
-            pnginfo_dict["Sampler"] = cls.get_sampler_for_civitai(sampler_names, schedulers, index)
+            pnginfo_dict["Sampler"] = cls.get_sampler_for_civitai(sampler_names, schedulers)
         else:
-            sampler_name_value = cls._value_from_entries(sampler_names, index)
-            scheduler_value = cls._value_from_entries(schedulers, index)
+            sampler_name_value = cls._value_from_entries(sampler_names)
+            scheduler_value = cls._value_from_entries(schedulers)
             if sampler_name_value is not None:
                 pnginfo_dict["Sampler"] = sampler_name_value
 
@@ -237,8 +214,8 @@ class Capture:
 
         image_widths = inputs_before_sampler_node.get(MetaField.IMAGE_WIDTH, [])
         image_heights = inputs_before_sampler_node.get(MetaField.IMAGE_HEIGHT, [])
-        width_value = cls._value_from_entries(image_widths, index)
-        height_value = cls._value_from_entries(image_heights, index)
+        width_value = cls._value_from_entries(image_widths)
+        height_value = cls._value_from_entries(image_heights)
         if width_value is not None and height_value is not None:
             pnginfo_dict["Size"] = f"{width_value}x{height_value}"
 
@@ -287,12 +264,12 @@ class Capture:
     ):
         resource_hashes = {}
         model_hashes = inputs_before_sampler_node.get(MetaField.MODEL_HASH, [])
-        model_hash_value = cls._value_from_entries(model_hashes, index)
+        model_hash_value = cls._value_from_entries(model_hashes)
         if model_hash_value is not None:
             resource_hashes["model"] = model_hash_value
 
         vae_hashes = inputs_before_this_node.get(MetaField.VAE_HASH, [])
-        vae_hash_value = cls._value_from_entries(vae_hashes, index)
+        vae_hash_value = cls._value_from_entries(vae_hashes)
         if vae_hash_value is not None:
             resource_hashes["vae"] = vae_hash_value
 
@@ -355,7 +332,7 @@ class Capture:
         return pnginfo_dict
     
     @classmethod
-    def get_sampler_for_civitai(cls, sampler_names, schedulers, index):
+    def get_sampler_for_civitai(cls, sampler_names, schedulers):
         """
         Get the pretty sampler name for Civitai in the form of `<Sampler Name> <Scheduler name>`.
             - `dpmpp_2m` and `karras` will return `DPM++ 2M Karras`
@@ -385,8 +362,8 @@ class Capture:
                 return sampler + " Karras"
             return sampler
 
-        sampler = cls._value_from_entries(sampler_names, index)
-        scheduler = cls._value_from_entries(schedulers, index) or "normal"
+        sampler = cls._value_from_entries(sampler_names)
+        scheduler = cls._value_from_entries(schedulers) or "normal"
         if sampler is None:
             return ""
 

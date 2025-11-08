@@ -313,7 +313,7 @@ class SendToEagleWithMetadata(BaseNode):
 
         # generate PNGInfo from inputs
         pnginfo_dict = Capture.gen_pnginfo_dict(
-            inputs_before_sampler_node, inputs_before_this_node, save_civitai_sampler, calc_model_hash, index
+            inputs_before_sampler_node, inputs_before_this_node, save_civitai_sampler, calc_model_hash
         )
         return pnginfo_dict
 
