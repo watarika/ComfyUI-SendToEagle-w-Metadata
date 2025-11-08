@@ -3,10 +3,6 @@ from ..defs.combo import SAMPLER_SELECTION_METHOD, TAG_PATTERN
 
 class SendToEagleWithMetadataFull(SendToEagleWithMetadata):
     @classmethod
-    def IS_CHANGED(cls, **kwargs):
-        return False  # Always changing (no cache)
-
-    @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
@@ -108,10 +104,6 @@ class SendToEagleWithMetadataSimple(SendToEagleWithMetadata):
 
 
 class CreateExtraMetadata(BaseNode):
-    @classmethod
-    def IS_CHANGED(cls, **kwargs):
-        return False  # Always changing (no cache)
-
     @classmethod
     def INPUT_TYPES(s):
         return {
