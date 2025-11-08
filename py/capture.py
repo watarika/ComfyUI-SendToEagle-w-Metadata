@@ -260,7 +260,7 @@ class Capture:
 
     @classmethod
     def get_hashes_for_civitai(
-        cls, inputs_before_sampler_node, inputs_before_this_node, index
+        cls, inputs_before_sampler_node, inputs_before_this_node
     ):
         resource_hashes = {}
         model_hashes = inputs_before_sampler_node.get(MetaField.MODEL_HASH, [])
