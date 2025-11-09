@@ -20,7 +20,7 @@ class _FallbackOutputsCache(dict):
         self[key] = value
 
 class _ExecutionListProxy:
-    """ComfyUI uses either get, get_cache, or get_output_cache depending on the version, so create a proxy class that handles both."""
+    """ComfyUI uses either get, get_cache, or get_output_cache depending on the version, so create a proxy class that handles all methods."""
 
     def __init__(self, outputs_cache):
         self._outputs_cache = outputs_cache
