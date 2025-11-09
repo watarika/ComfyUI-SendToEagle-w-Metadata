@@ -20,28 +20,6 @@ class _FallbackOutputsCache(dict):
         self[key] = value
 
 
-class _ExecutionListProxy:
-    """Minimal wrapper mimicking ExecutionList cache lookups for metadata capture."""
-
-    def __init__(self, outputs_cache):
-        self._outputs_cache = outputs_cache
-
-    def get_output_cache(self, from_node_id, _to_node_id):
-        return self._outputs_cache.get(from_node_id)
-
-    def get_cache(self, from_node_id, _to_node_id):
-        cached = self._outputs_cache.get(from_node_id)
-        if cached is not None and hasattr(self._outputs_cache, "set"):
-            # Mirror ExecutionList behaviour by refreshing the entry on access.
-            self._outputs_cache.set(from_node_id, cached)
-        return cached
-
-    def cache_update(self, node_id, value):
-        if hasattr(self._outputs_cache, "set"):
-            # Keep outputs cache in sync when metadata hooks observe new values.
-            self._outputs_cache.set(node_id, value)
-
-
 class Capture:
     @staticmethod
     def _select_latest_value(value):
@@ -55,7 +33,7 @@ class Capture:
         return value
 
     @staticmethod
-    def _closest_value_from_entries(entries):
+    def _value_from_entries(entries):
         for entry in entries:
             if entry is None:
                 continue
@@ -65,10 +43,11 @@ class Capture:
                 value = entry
             if value is not None:
                 return value
+
         return None
 
     @classmethod
-    def get_inputs(cls, calc_model_hash, include_prompts=True):
+    def get_inputs(cls, calc_model_hash, index, include_prompts=True):
         inputs = defaultdict(list)
         prompt = hook.current_prompt
         extra_data = hook.current_extra_data
@@ -77,49 +56,75 @@ class Capture:
         raw_outputs = getattr(caches, "outputs", None) if caches else None
         using_real_outputs = raw_outputs is not None
         outputs = raw_outputs if using_real_outputs else _FallbackOutputsCache()
-        execution_list = _ExecutionListProxy(outputs) if using_real_outputs else None
-        dynprompt = DynamicPrompt(prompt)
 
-        for node_id, obj in prompt.items():
-            class_type = obj["class_type"]
+        dynprompt = getattr(outputs, "dynprompt", None)
+        if dynprompt is None and prompt_executor is not None:
+            dynprompt = getattr(prompt_executor, "dynprompt", None)
+        if dynprompt is None:
+            dynprompt = DynamicPrompt(prompt)
+
+        prompt_lookup = prompt
+        if dynprompt is not None:
+            try:
+                ephemeral = getattr(dynprompt, "ephemeral_prompt", {})
+                if ephemeral:
+                    combined_prompt = dict(prompt)
+                    combined_prompt.update(ephemeral)
+                    prompt_lookup = combined_prompt
+            except Exception:
+                prompt_lookup = prompt
+
+        node_ids = list(dynprompt.all_node_ids()) if dynprompt is not None else list(prompt.keys())
+
+        for node_id in sorted(node_ids, key=str):
+            node_obj = None
+            if dynprompt is not None and dynprompt.has_node(node_id):
+                try:
+                    node_obj = dynprompt.get_node(node_id)
+                except Exception:
+                    node_obj = None
+            if node_obj is None:
+                node_obj = prompt.get(node_id)
+                if node_obj is None:
+                    continue
+
+            class_type = node_obj.get("class_type")
             if not include_prompts and class_type in TEXT_ENCODE_CLASSES:
                 continue
             if class_type not in CAPTURE_FIELD_LIST:
                 continue
             obj_class = NODE_CLASS_MAPPINGS[class_type]
-            node_inputs = prompt[node_id]["inputs"]
-            runtime_entry = hook.runtime_input_cache.get(node_id)
-            if runtime_entry is not None:
-                input_data = (
-                    runtime_entry.get("inputs", {}),
-                    runtime_entry.get("missing", {}),
-                    runtime_entry.get("hidden", {}),
+            node_inputs = node_obj.get("inputs", {})
+
+            if outputs is None:
+                # Without an execution list cache the inputs are unavailable (e.g. when
+                # custom hooks lost the PromptExecutor reference). Skip gracefully to
+                # avoid crashing the whole workflow – metadata will just be partial.
+                continue
+            try:
+                input_data = get_input_data(
+                    node_inputs,
+                    obj_class,
+                    node_id,
+                    outputs,
+                    dynprompt,
+                    extra_data,
                 )
-            else:
-                if execution_list is None:
-                    # Without an execution list cache the inputs are unavailable (e.g. when
-                    # custom hooks lost the PromptExecutor reference). Skip gracefully to
-                    # avoid crashing the whole workflow – metadata will just be partial.
-                    continue
-                try:
-                    input_data = get_input_data(
-                        node_inputs,
-                        obj_class,
-                        node_id,
-                        execution_list,
-                        dynprompt,
-                        extra_data,
-                    )
-                except Exception:
-                    # The upstream cache might still be rebuilding; skip capturing this
-                    # node and continue harvesting what is available.
-                    continue
-            
+            except Exception:
+                # The upstream cache might still be rebuilding; skip capturing this
+                # node and continue harvesting what is available.
+                continue
+
+            # if class_type not in ["KSampler"]:
+            #     print("Capturing inputs for node:", node_id, "Class type:", class_type, "Input data:", input_data)
+
+            display_node_id = dynprompt.get_display_node_id(node_id)
+
             metas = CAPTURE_FIELD_LIST[class_type]
             for meta, field_data in metas.items():
                 validate = field_data.get("validate")
                 if validate is not None and not validate(
-                    node_id, obj, prompt, extra_data, outputs, input_data
+                    display_node_id, node_obj, prompt_lookup, extra_data, outputs, input_data
                 ):
                     continue
 
@@ -131,7 +136,7 @@ class Capture:
                 selector = field_data.get("selector")
                 if selector is not None:
                     v = selector(
-                        node_id, obj, prompt, extra_data, outputs, input_data
+                        node_id, node_obj, prompt_lookup, extra_data, outputs, input_data
                     )
                     if isinstance(v, list):
                         for x in v:
@@ -143,8 +148,17 @@ class Capture:
                 field_name = field_data["field_name"]
                 value = input_data[0].get(field_name)
                 if value is not None:
+                    # print("Capturing value for field:", field_name, "NodeID:", node_id, "Value:", value)
                     format = field_data.get("format")
-                    v = cls._select_latest_value(value)
+
+                    if isinstance(value, list) and len(value) > 0:
+                        if len(value) > index:
+                            v = value[index]
+                        else:
+                            v = value[0]
+                    else:
+                        v = value
+
                     if format is not None:
                         # formatのメソッド名が「_hash」で終わる場合、かつ、calc_model_hashがFalseの場合はメソッドを呼び出さずNoneにする
                         if format.__name__.endswith("_hash") and not calc_model_hash:
@@ -157,6 +171,7 @@ class Capture:
                     else:
                         inputs[meta].append((node_id, v))
 
+        # print("Final captured inputs:", dict(inputs))
         return inputs
 
     @classmethod
@@ -165,9 +180,9 @@ class Capture:
 
         def update_pnginfo_dict(inputs, metafield, key):
             entries = inputs.get(metafield, [])
-            closest_value = cls._closest_value_from_entries(entries)
-            if closest_value is not None:
-                pnginfo_dict[key] = closest_value
+            entry_value = cls._value_from_entries(entries)
+            if entry_value is not None:
+                pnginfo_dict[key] = entry_value
 
         update_pnginfo_dict(
             inputs_before_sampler_node, MetaField.POSITIVE_PROMPT, "Positive prompt"
@@ -184,8 +199,8 @@ class Capture:
         if (save_civitai_sampler):
             pnginfo_dict["Sampler"] = cls.get_sampler_for_civitai(sampler_names, schedulers)
         else:
-            sampler_name_value = cls._closest_value_from_entries(sampler_names)
-            scheduler_value = cls._closest_value_from_entries(schedulers)
+            sampler_name_value = cls._value_from_entries(sampler_names)
+            scheduler_value = cls._value_from_entries(schedulers)
             if sampler_name_value is not None:
                 pnginfo_dict["Sampler"] = sampler_name_value
 
@@ -201,8 +216,8 @@ class Capture:
 
         image_widths = inputs_before_sampler_node.get(MetaField.IMAGE_WIDTH, [])
         image_heights = inputs_before_sampler_node.get(MetaField.IMAGE_HEIGHT, [])
-        width_value = cls._closest_value_from_entries(image_widths)
-        height_value = cls._closest_value_from_entries(image_heights)
+        width_value = cls._value_from_entries(image_widths)
+        height_value = cls._value_from_entries(image_heights)
         if width_value is not None and height_value is not None:
             pnginfo_dict["Size"] = f"{width_value}x{height_value}"
 
@@ -251,12 +266,12 @@ class Capture:
     ):
         resource_hashes = {}
         model_hashes = inputs_before_sampler_node.get(MetaField.MODEL_HASH, [])
-        model_hash_value = cls._closest_value_from_entries(model_hashes)
+        model_hash_value = cls._value_from_entries(model_hashes)
         if model_hash_value is not None:
             resource_hashes["model"] = model_hash_value
 
         vae_hashes = inputs_before_this_node.get(MetaField.VAE_HASH, [])
-        vae_hash_value = cls._closest_value_from_entries(vae_hashes)
+        vae_hash_value = cls._value_from_entries(vae_hashes)
         if vae_hash_value is not None:
             resource_hashes["vae"] = vae_hash_value
 
@@ -349,8 +364,8 @@ class Capture:
                 return sampler + " Karras"
             return sampler
 
-        sampler = cls._closest_value_from_entries(sampler_names)
-        scheduler = cls._closest_value_from_entries(schedulers) or "normal"
+        sampler = cls._value_from_entries(sampler_names)
+        scheduler = cls._value_from_entries(schedulers) or "normal"
         if sampler is None:
             return ""
 

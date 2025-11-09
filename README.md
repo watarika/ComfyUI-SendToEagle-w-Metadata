@@ -167,13 +167,8 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
 - Please check the following directory for supported extensions.
   - [py/defs/ext/](py/defs/ext/)
 
-## Known Issues
-- When using multiple “CLIP Text Encode (Prompt)” equivalent nodes in a loop, the first workflow execution works correctly. However, if the input to “CLIP Text Encode (Prompt)” remains unchanged and the node is not re-executed via caching during subsequent workflow executions, the prompt cannot be retrieved correctly (All prompts in the loop will end up being the value from the first loop iteration).
-- If the input to “CLIP Text Encode (Prompt)” or its upstream inputs differ from the previous execution, causing the equivalent node to re-execute, it will function correctly in subsequent workflow runs.
-- This behavior is due to ComfyUI's caching mechanism, making it difficult to address on the custom node side.
-- Workaround: Explicitly input values into the node's positive/negative inputs.
-
 ## Change History
+- 2025/11/09 1.1.8 Fixed a bug where prompts might not save. Fully supports workflows using loops.
 - 2025/11/06 1.1.7 Bug Fix for Node Analysis in ComfyUI-Easy-Use
 - 2025/11/05 1.1.6 Added IMAGE to output. Outputs the IMAGE received as input without modification.
 - 2025/11/03 1.1.5 Fixed a bug that could cause the error "AttributeError: 'NoneType' object has no attribute 'caches'".

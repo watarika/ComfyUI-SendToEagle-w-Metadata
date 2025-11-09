@@ -1,6 +1,6 @@
 import functools
 
-from .hook import pre_execute, pre_get_input_data, post_get_input_data
+from .hook import pre_execute, pre_get_input_data
 import execution
 
 
@@ -18,35 +18,6 @@ execution.PromptExecutor.execute = prefix_function(
     execution.PromptExecutor.execute, pre_execute
 )
 
-
-_original_get_input_data = execution.get_input_data
-
-
-def wrapped_get_input_data(inputs, class_def, unique_id, execution_list=None, dynprompt=None, extra_data=None):
-    pre_get_input_data(inputs, class_def, unique_id, execution_list, dynprompt, extra_data)
-    result = _original_get_input_data(
-        inputs,
-        class_def,
-        unique_id,
-        execution_list,
-        dynprompt,
-        extra_data if extra_data is not None else {},
-    )
-    try:
-        post_get_input_data(
-            inputs,
-            class_def,
-            unique_id,
-            result,
-            execution_list,
-            dynprompt,
-            extra_data if extra_data is not None else {},
-        )
-    except Exception:
-        # Silently ignore errors in post_get_input_data to avoid breaking the main execution.
-        # This function captures metadata for SendToEagle nodes and is non-critical.
-        pass
-    return result
-
-
-execution.get_input_data = wrapped_get_input_data
+execution.get_input_data = prefix_function(
+    execution.get_input_data, pre_get_input_data
+)

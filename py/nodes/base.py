@@ -123,14 +123,6 @@ class SendToEagleWithMetadata(BaseNode):
         has_manual_negative = self._prompt_has_manual(negative_prompts)
         use_workflow_prompts = not (has_manual_positive and has_manual_negative)
 
-        pnginfo_dict_src = self.gen_pnginfo(
-            sampler_selection_method,
-            sampler_selection_node_id,
-            civitai_sampler,
-            calc_model_hash,
-            include_prompts=use_workflow_prompts,
-        )
-
         results = []
         file_path_list = []
         batch_size = len(image_tensors)
@@ -143,7 +135,16 @@ class SendToEagleWithMetadata(BaseNode):
             i = 255.0 * image_array
             img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
 
-            pnginfo_dict = pnginfo_dict_src.copy()
+            pnginfo_dict = self.gen_pnginfo(
+                sampler_selection_method,
+                sampler_selection_node_id,
+                civitai_sampler,
+                calc_model_hash,
+                index,
+                include_prompts=use_workflow_prompts,
+            )
+
+            #pnginfo_dict = pnginfo_dict_src.copy()
             extra_metadata_value = self._select_batch_value(extra_metadata_source, index, {})
             if isinstance(extra_metadata_value, dict):
                 extra_metadata_value = extra_metadata_value.copy()
@@ -281,10 +282,11 @@ class SendToEagleWithMetadata(BaseNode):
         sampler_selection_node_id,
         save_civitai_sampler,
         calc_model_hash,
+        index,
         include_prompts=True,
     ):
         # get all node inputs
-        inputs = Capture.get_inputs(calc_model_hash, include_prompts)
+        inputs = Capture.get_inputs(calc_model_hash, index, include_prompts)
 
         # get sampler node before this node
         if cls.__name__ == "SendToEagleWithMetadataFull":
