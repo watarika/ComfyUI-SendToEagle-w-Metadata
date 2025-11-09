@@ -28,20 +28,8 @@ class _ExecutionListProxy:
     def get(self, input_unique_id):
         return self._outputs_cache.get(input_unique_id)
 
-    def get_output_cache(self, from_node_id, _to_node_id):
-        return self._outputs_cache.get(from_node_id)
-
     def get_cache(self, from_node_id, _to_node_id):
-        cached = self._outputs_cache.get(from_node_id)
-        if cached is not None and hasattr(self._outputs_cache, "set"):
-            # Mirror ExecutionList behaviour by refreshing the entry on access.
-            self._outputs_cache.set(from_node_id, cached)
-        return cached
-
-    def cache_update(self, node_id, value):
-        if hasattr(self._outputs_cache, "set"):
-            # Keep outputs cache in sync when metadata hooks observe new values.
-            self._outputs_cache.set(node_id, value)
+        return self._outputs_cache.get(from_node_id)
 
 class Capture:
     @staticmethod
