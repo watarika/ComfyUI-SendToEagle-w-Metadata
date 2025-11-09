@@ -19,6 +19,21 @@ class _FallbackOutputsCache(dict):
     def set(self, key, value):
         self[key] = value
 
+class _ExecutionListProxy:
+    """ComfyUI uses either get, get_cache, or get_output_cache depending on the version, so create a proxy class that handles all methods."""
+
+    def __init__(self, outputs_cache):
+        self._outputs_cache = outputs_cache
+
+    def get(self, node_id):
+        return self._outputs_cache.get(node_id)
+
+    def get_cache(self, node_id, _to_node_id):
+        return self._outputs_cache.get(node_id)
+
+    def get_output_cache(self, node_id, _to_node_id):
+        return self._outputs_cache.get(node_id)
+
 
 class Capture:
     @staticmethod
@@ -56,6 +71,7 @@ class Capture:
         raw_outputs = getattr(caches, "outputs", None) if caches else None
         using_real_outputs = raw_outputs is not None
         outputs = raw_outputs if using_real_outputs else _FallbackOutputsCache()
+        execution_list = _ExecutionListProxy(outputs)
 
         dynprompt = getattr(outputs, "dynprompt", None)
         if dynprompt is None and prompt_executor is not None:
@@ -96,7 +112,7 @@ class Capture:
             obj_class = NODE_CLASS_MAPPINGS[class_type]
             node_inputs = node_obj.get("inputs", {})
 
-            if outputs is None:
+            if execution_list is None:
                 # Without an execution list cache the inputs are unavailable (e.g. when
                 # custom hooks lost the PromptExecutor reference). Skip gracefully to
                 # avoid crashing the whole workflow – metadata will just be partial.
@@ -106,7 +122,7 @@ class Capture:
                     node_inputs,
                     obj_class,
                     node_id,
-                    outputs,
+                    execution_list,
                     dynprompt,
                     extra_data,
                 )

@@ -168,6 +168,7 @@ Refer to the table below for the identifiers specified in `<format>` of `%date:<
   - [py/defs/ext/](py/defs/ext/)
 
 ## Change History
+- 2025/11/09 1.1.9 Fixed a bug where prompts were not saved in ComfyUI v0.3.68
 - 2025/11/09 1.1.8 Fixed a bug where prompts might not save. Fully supports workflows using loops.
 - 2025/11/06 1.1.7 Bug Fix for Node Analysis in ComfyUI-Easy-Use
 - 2025/11/05 1.1.6 Added IMAGE to output. Outputs the IMAGE received as input without modification.
