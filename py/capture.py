@@ -20,7 +20,7 @@ class _FallbackOutputsCache(dict):
         self[key] = value
 
 class _ExecutionListProxy:
-    """Minimal wrapper mimicking ExecutionList cache lookups for metadata capture."""
+    """ComfyUI uses either get, get_cache, or get_output_cache depending on the version, so create a proxy class that handles both."""
 
     def __init__(self, outputs_cache):
         self._outputs_cache = outputs_cache
@@ -30,6 +30,10 @@ class _ExecutionListProxy:
 
     def get_cache(self, from_node_id, _to_node_id):
         return self._outputs_cache.get(from_node_id)
+
+    def get_output_cache(self, from_node_id, _to_node_id):
+        return self._outputs_cache.get(from_node_id)
+
 
 class Capture:
     @staticmethod
