@@ -25,14 +25,14 @@ class _ExecutionListProxy:
     def __init__(self, outputs_cache):
         self._outputs_cache = outputs_cache
 
-    def get(self, input_unique_id):
-        return self._outputs_cache.get(input_unique_id)
+    def get(self, node_id):
+        return self._outputs_cache.get(node_id)
 
-    def get_cache(self, from_node_id, _to_node_id):
-        return self._outputs_cache.get(from_node_id)
+    def get_cache(self, node_id, _to_node_id):
+        return self._outputs_cache.get(node_id)
 
-    def get_output_cache(self, from_node_id, _to_node_id):
-        return self._outputs_cache.get(from_node_id)
+    def get_output_cache(self, node_id, _to_node_id):
+        return self._outputs_cache.get(node_id)
 
 
 class Capture:
