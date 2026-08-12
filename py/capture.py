@@ -25,14 +25,31 @@ class _ExecutionListProxy:
     def __init__(self, outputs_cache):
         self._outputs_cache = outputs_cache
 
-    def get(self, node_id):
+    def _read(self, node_id):
+        # Newer ComfyUI builds (dynamic VRAM/RAM-pressure caching) made the
+        # outputs cache's `get()` a coroutine (see comfy_execution/caching.py
+        # RAMPressureCache.get). Calling it without awaiting silently returns
+        # an un-awaited coroutine and breaks metadata capture for every node
+        # (RuntimeWarning: coroutine 'RAMPressureCache.get' was never awaited).
+        #
+        # ComfyUI's own synchronous execution engine (comfy_execution/graph.py
+        # ExecutionList.get_cache/cache_link) reads already-computed outputs
+        # via the cache's synchronous `get_local()` accessor instead of the
+        # async `get()`, so mirror that here. `_FallbackOutputsCache` (a plain
+        # dict) has no `get_local`, so fall back to its regular sync `.get()`.
+        get_local = getattr(self._outputs_cache, "get_local", None)
+        if get_local is not None:
+            return get_local(node_id)
         return self._outputs_cache.get(node_id)
+
+    def get(self, node_id):
+        return self._read(node_id)
 
     def get_cache(self, node_id, _to_node_id):
-        return self._outputs_cache.get(node_id)
+        return self._read(node_id)
 
     def get_output_cache(self, node_id, _to_node_id):
-        return self._outputs_cache.get(node_id)
+        return self._read(node_id)
 
 
 class Capture:
